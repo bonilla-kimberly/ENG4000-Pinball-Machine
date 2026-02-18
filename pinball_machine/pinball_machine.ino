@@ -5,13 +5,15 @@
 
 
 // -------- Pin Definitions --------
-//External switch (button on playfield) = buttonPin
-//Pin on Relay for right flipper solenoid = right_flipper_relay
-//Pin on Relay for ball relase solenoid = ball_release_relay
+//External switch (button on playfield) = L_flipper_sw
+//External switch (button on playfield) = R_flipper_sw
+//Pin on Relay for right flipper solenoid = L_flipper
+//Pin on Relay for ball relase solenoid = R_flipper
 
-const int buttonPin = 8; 
-const int right_flipper_relay = 4;
-const int ball_release_relay = 2;
+const int L_flipper_sw = 8; 
+const int R_flipper_sw = 7; 
+const int L_flipper = 4;
+const int R_flipper = 2;
 
 
 // -------- Setup --------
@@ -20,31 +22,40 @@ const int ball_release_relay = 2;
 void setup() {
   Serial.begin(9600);
 
-  pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(L_flipper_sw, INPUT_PULLUP);
+  pinMode(R_flipper_sw, INPUT_PULLUP);
 
-  pinMode(right_flipper_relay, OUTPUT);
-  pinMode(ball_release_relay, OUTPUT);
+  pinMode(L_flipper, OUTPUT);
+  pinMode(R_flipper, OUTPUT);
 
   // Default all should be turned off
-  digitalWrite(right_flipper_relay, HIGH); 
-  digitalWrite(ball_release_relay, HIGH);
+  digitalWrite(L_flipper, HIGH); 
+  digitalWrite(R_flipper, HIGH);
 }
 
 // -------- Main Loop --------
 void loop() {
 //Read values coming from button and relay
-  int buttonState = digitalRead(buttonPin);
+  int buttonState = digitalRead(L_flipper_sw);
+  int buttonState2 = digitalRead(R_flipper_sw);
   Serial.print("Button: ");
   Serial.print(buttonState);
+  Serial.print(buttonState2);
 
   // use for debugging 
-  int relayState = digitalRead(right_flipper_relay);
+  int relayState = digitalRead(L_flipper);
   Serial.print("Relay: ");
   Serial.println(relayState);
 
-  if (buttonState == LOW) {           
-    activateActuators();
-  } else if (buttonState == HIGH) {                        
+  if (buttonState == LOW && buttonState2 == LOW) {           
+    activateActuatorL();
+    activateActuatorR();
+  } else if (buttonState == LOW) {
+    activateActuatorL();
+  } else if (buttonState2 == LOW) {
+    activateActuatorR();
+  }
+   else if (buttonState == HIGH || buttonState2 == HIGH) {                        
     deactivateActuators();
   }
   delay(200); //debounce delay 
@@ -55,14 +66,17 @@ void loop() {
 // - activates solenoinds via relays (flippers, bumper, ball relase solenoid)
 // ================================
 
-void activateActuators() {
-    digitalWrite(right_flipper_relay, LOW);      
-    digitalWrite(ball_release_relay, LOW); 
+void activateActuatorL() {
+    digitalWrite(L_flipper, LOW);  
+}
+
+void activateActuatorR() {
+  digitalWrite(R_flipper, LOW); 
 }
 
 void deactivateActuators() {
-    digitalWrite(right_flipper_relay, HIGH);    
-    digitalWrite(ball_release_relay, HIGH); 
+    digitalWrite(L_flipper, HIGH);                         
+    digitalWrite(R_flipper, HIGH); 
 }
 
 
