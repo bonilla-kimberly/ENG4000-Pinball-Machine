@@ -10,17 +10,17 @@
 //Pin on Relay for right flipper solenoid = L_flipper
 //Pin on Relay for ball relase solenoid = R_flipper
 
-const int L_flipper_sw = 8; 
-const int R_flipper_sw = 7; 
-const int L_flipper = 4;
-const int R_flipper = 2;
+const int L_flipper_sw = 4; 
+const int R_flipper_sw = 5; 
+const int L_flipper = 6;
+const int R_flipper = 7;
 
 
 // -------- Setup --------
 // HIGH == relay and button are off 
 // LOW == relay and button are on  
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);                                   
 
   pinMode(L_flipper_sw, INPUT_PULLUP);
   pinMode(R_flipper_sw, INPUT_PULLUP);
