@@ -15,12 +15,25 @@ const int R_flipper_sw = 5;
 const int L_flipper = 6;
 const int R_flipper = 7;
 
+//Pin on 10 point scoring BL, BR, ML, MR, TL, TR path and LW, RW bumper = 10_points
+const int points10 = 9;
+
+//Pin on bumpers with relation to LED combo scoring
+const int TL_bumper = 10;
+const int TR_bumper = 11;
+const int ML_bumper = 12;
+const int MR_bumper = 13;
+
+
+//Score counter initial 0
+int score = 0;
 
 // -------- Setup --------
 // HIGH == relay and button are off 
 // LOW == relay and button are on  
 void setup() {
-  Serial.begin(115200);                                   
+  Serial.begin(115200);            
+                       
 
   pinMode(L_flipper_sw, INPUT_PULLUP);
   pinMode(R_flipper_sw, INPUT_PULLUP);
@@ -47,16 +60,14 @@ void loop() {
   Serial.print("Relay: ");
   Serial.println(relayState);
 
-  if (buttonState == LOW && buttonState2 == LOW) {           
+  // display score
+  Serial.print("Score: ");
+  Serial.println(score);
+
+  if (buttonState == LOW) {
     activateActuatorL();
+  } if (buttonState2 == LOW) {
     activateActuatorR();
-  } else if (buttonState == LOW) {
-    activateActuatorL();
-  } else if (buttonState2 == LOW) {
-    activateActuatorR();
-  }
-   else if (buttonState == HIGH || buttonState2 == HIGH) {                        
-    deactivateActuators();
   }
   delay(200); //debounce delay 
 }
@@ -67,7 +78,7 @@ void loop() {
 // ================================
 
 void activateActuatorL() {
-    digitalWrite(L_flipper, LOW);  
+  digitalWrite(L_flipper, LOW);  
 }
 
 void activateActuatorR() {
@@ -79,6 +90,15 @@ void deactivateActuators() {
     digitalWrite(R_flipper, HIGH); 
 }
 
+// ================================
+// ScoringSystem
+// - Stores score
+// - counts score and combos
+// ================================
+
+void addPoints(int points) {
+  score += points;
+}
 
 
 
