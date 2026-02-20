@@ -12,17 +12,20 @@ const int R_flipper_sw = 5;
 const int L_flipper    = 6;
 const int R_flipper    = 7;
 
-const int points10 = 9;
+const int path = 9; //BL,BR,ML,MR,TL,TR path
+const int w_bumper = 10; //LW, RW bumper
 
-const int RED_sw_bumper = 10; //TR, ML
-const int RED_bump = 11;
-const int YELLOW_sw_bumper = 12; //TL, MR
-const int YELLOW_bump = 13;
+const int RED_sw_bumper = 11; //TR, ML
+const int RED_bump = 12;
+const int YELLOW_sw_bumper = 13; //TL, MR
+const int YELLOW_bump = 14;
 
-const int target_sw = 14; //BL, BR, Y, R target switch
-const int target_bump = 15; //BL,BR,Y,R target bump
+const int target_sw = 15; //BL, BR target switch
+const int target_bump = 16; //BL,BR target bump
 
-const int TW_switch = 18; //TW1,2,3,4, switch
+const int TW_switch = 17; //TW1,2,3,4,Y,R switch
+const int T_bump = 18; //Y,R target bump
+
 
 
 // Pressed = LOW because INPUT_PULLUP
@@ -46,13 +49,11 @@ int score = 0;
 enum SwitchRole {
   SW_L_FLIPPER,
   SW_R_FLIPPER,
-  SW_10PTS,
+  SW_PATH,
+  SW_WHITE,
   SW_R_BUMPER,
-  R_BUMP,
   SW_Y_BUMPER,
-  Y_BUMP,
   SW_TARGET,
-  TARGET_BUMP,
   SW_TW,
 };
 
@@ -71,7 +72,8 @@ SwitchDef switches[] = {
   {"L_flipper_sw", (uint8_t)L_flipper_sw, SW_L_FLIPPER, HIGH, HIGH, 0},
   {"R_flipper_sw", (uint8_t)R_flipper_sw, SW_R_FLIPPER, HIGH, HIGH, 0},
 
-  {"10_points",    (uint8_t)points10,     SW_10PTS,     HIGH, HIGH, 0},
+  {"paths",        (uint8_t)path,     SW_PATH,     HIGH, HIGH, 0},
+  {"white_bumper", (uint8_t)w_bumper,     SW_WHITE,    HIGH, HIGH, 0},
 
   {"Red_sw_bumpers",    (uint8_t)RED_sw_bumper,     SW_R_BUMPER,  HIGH, HIGH, 0},
   {"Yellow_bumpers",    (uint8_t)YELLOW_sw_bumper,  SW_Y_BUMPER,  HIGH, HIGH, 0},
@@ -124,7 +126,12 @@ void handleSwitchPressed(const SwitchDef& sw) {
       activateActuatorR();
       break;
 
-    case SW_10PTS:
+    case SW_PATH:
+      //if(LEDon){}
+      addPoints(50);
+      break;
+    case SW_WHITE:
+      addPoints(10);
       break;
     case SW_R_BUMPER:
       // TODO: flash bumper LEDs / combo logic
