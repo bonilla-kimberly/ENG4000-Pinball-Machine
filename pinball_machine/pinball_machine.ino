@@ -85,7 +85,6 @@ SwitchDef switches[] = {
 
 const int NUM_SWITCHES = sizeof(switches) / sizeof(switches[0]);
 
-
 // ================================
 // ActuatorSystem
 // - activates solenoinds via relays (flippers, etc.)
@@ -108,6 +107,101 @@ void addPoints(int points) {
   Serial.print(points);
   Serial.print(" => ");
   Serial.println(score);
+}
+
+// ================================
+// LightingSystem
+// - Activates specific LED groups when events happen
+// - Non-blocking (millis-based), NO delay()
+// ================================
+
+// ---- LED Pin Definitions (single LEDs) ----
+const int TARGET_LED  = 19;  // example pin (change)
+const int TW_LED    = 20;  // example pin (change)
+const int RED_LED = 21;  // example pin (change)
+const int YELLOW_LED = 35;  // example pin (change)
+const int P_LED = 36;  // example pin (change)
+const int PATH_LED = 37;
+const int BALL_RELEASE_LED = 38;
+const uint8_t Y_LED[] = {39, 40, 41, 42, 43};
+const uint8_t R_LED[] = {44, 45, 46, 47, 48};
+const int NUM_Y_LED = sizeof(Y_LED) / sizeof(Y_LED[0]);
+const int NUM_R_LED = sizeof(R_LED) / sizeof(R_LED[0]);
+
+
+enum LedGroupId {
+  LEDG_TARGET,
+  LEDG_TW,
+  LEDG_RED,
+  LEDG_YELLOW,
+  LED_PURPLE,
+  LEDG_PATH,
+  LEDG_BALL_RELEASE,
+  LED_Y0,
+  LED_Y1,
+  LED_Y2,
+  LED_Y3,
+  LED_Y4,
+  LED_R0,
+  LED_R1,
+  LED_R2,
+  LED_R3,
+  LED_R4,
+
+  LEDG_COUNT
+};
+
+struct LedGroup {
+  const char* name;
+  uint8_t pin;            // for single LED groups
+  bool active;
+  uint32_t untilMs;       // when to turn off
+};
+
+LedGroup ledGroups[LEDG_COUNT] = {
+  {"BOTTOM_TARGET", (uint8_t)TARGET_LED,  false, 0},
+  {"TOP_SW_TARGET", (uint8_t)TW_LED,      false, 0},
+  {"RED",           (uint8_t)RED_LED,     false, 0},
+  {"YELLOW",        (uint8_t)YELLOW_LED,  false, 0},
+  {"PURPLE",        (uint8_t)P_LED,       false, 0},
+  {"PATH",          (uint8_t)PATH_LED,    false, 0},
+  {"BALL_RELEASE",  (uint8_t)BALL_RELEASE_LED, false, 0},
+  {"Y_LED1", (uint8_t)Y_LED[0], false, 0},
+  {"Y_LED2", (uint8_t)Y_LED[1], false, 0},
+  {"Y_LED3", (uint8_t)Y_LED[2], false, 0},
+  {"Y_LED4", (uint8_t)Y_LED[3], false, 0},
+  {"Y_LED5", (uint8_t)Y_LED[4], false, 0},
+  {"R_LED1", (uint8_t)R_LED[0], false, 0},
+  {"R_LED2", (uint8_t)R_LED[1], false, 0},
+  {"R_LED3", (uint8_t)R_LED[2], false, 0},
+  {"R_LED4", (uint8_t)R_LED[3], false, 0},
+  {"R_LED5", (uint8_t)R_LED[4], false, 0}
+};
+
+void lightingBegin() {
+  for (int i = 0; i < LEDG_COUNT; i++) {
+    pinMode(ledGroups[i].pin, OUTPUT);
+    digitalWrite(ledGroups[i].pin, LOW);
+    ledGroups[i].active = false;
+    ledGroups[i].untilMs = 0;
+  }
+}
+/* FIX
+// Flash a group for ms milliseconds (non-blocking)
+void flashGroup(LedGroupId id, uint16_t ms, uint32_t now) {
+  ledGroups[id].active = true;
+  ledGroups[id].untilMs = now + ms;
+  digitalWrite(ledGroups[id].pin, HIGH);
+}*/
+
+// Update system: turn off groups whose flash time ended
+void lightingUpdate(uint32_t now) {
+  for (int i = 0; i < LEDG_COUNT; i++) {
+    if (ledGroups[i].active && (int32_t)(now - ledGroups[i].untilMs) >= 0) {
+      ledGroups[i].active = false;
+      digitalWrite(ledGroups[i].pin, LOW);
+    }
+  }
 }
 
 
@@ -184,6 +278,9 @@ void setup() {
 
   digitalWrite(L_flipper, RELAY_OFF);
   digitalWrite(R_flipper, RELAY_OFF);
+
+  lightingBegin();
+
 }
 
 
@@ -217,6 +314,8 @@ void loop() {
       }
     }
   }
+
+  lightingUpdate(now);
 
   // No delay -> responsive
 }
