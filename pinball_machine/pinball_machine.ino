@@ -41,6 +41,24 @@ const int RELEASED = HIGH;
 const int RELAY_ON = LOW;
 const int RELAY_OFF = HIGH;
 
+// ---- LED Pin Definitions (single LEDs) ----
+const int TARGET_LED  = 16; //on BL, BR, GR, GL LED 
+const int TW_LED    = 17; //off TW1,2,3,4,Y,R LED
+const int RED_LED = 18;  //off TR, ML LED
+const int YELLOW_LED = 19; //off TL, MR LED
+const int P_LED = 20; //off Special
+const int PATH_LED = 21; //on BR, BL, ML, MR, TL, TR path LED
+const int BALL_RELEASE_LED = 35; //off ball release LED
+const int Y_LED1 = 36; //off 
+const int Y_LED2 = 37;
+const int Y_LED3 = 38;
+const int Y_LED4 = 39;
+const int Y_LED5 = 40;
+const int R_LED1 = 41; //off
+const int R_LED2 = 42;
+const int R_LED3 = 43;
+const int R_LED4 = 44;
+const int R_LED5 = 45;
 
 // -------- Score logic --------
 int score = 0; // initial set to 0
@@ -69,6 +87,8 @@ void setup() {
 
   const int NUM_RELAYS[] = {L_flipper, R_flipper, target_bump, RED_bump, YELLOW_bump, ball_release};
 
+  const int NUM_LEDS[] = {TW_LED, RED_LED, YELLOW_LED, P_LED, BALL_RELEASE_LED, Y_LED1, Y_LED2, Y_LED3, Y_LED4, Y_LED5, R_LED1, R_LED2, R_LED3, R_LED4, R_LED5};
+
   for(int i = 0; i < sizeof(NUM_SWITCHES) / sizeof(NUM_SWITCHES[0]); i++){
       pinMode(NUM_SWITCHES[i], INPUT_PULLUP);
   }
@@ -80,6 +100,17 @@ void setup() {
   for(int i = 0; i < sizeof(NUM_RELAYS) / sizeof(NUM_RELAYS[0]); i++){
     digitalWrite(NUM_RELAYS[i], RELAY_OFF);
   }
+
+  for(int i = 0; i < sizeof(NUM_LEDS) / sizeof(NUM_LEDS[0]); i++){
+    pinMode(NUM_LEDS[i], OUTPUT);
+    digitalWrite(NUM_LEDS[i], LOW); // turn off all LEDs at start
+  }
+
+  pinMode(PATH_LED, OUTPUT);
+  digitalWrite(PATH_LED, HIGH); // turn on path LED at start
+
+  pinMode(TARGET_LED, OUTPUT);
+  digitalWrite(TARGET_LED, HIGH); // turn off target LED at start
 }
 
 // ================================
@@ -152,6 +183,20 @@ void handleBallRelease() {
   }
 
 }
+unsigned long pathLedStartTime = 0;
+bool pathLedBlinking = false;
+
+unsigned long targetLedStartTime = 0;
+bool targetLedBlinking = false;
+
+unsigned long topGroupMillis = 0;
+bool topGroupHit = false;
+
+unsigned long redGroupMillis = 0;
+bool redGroupAdd = false;
+
+unsigned long yellowGroupMillis = 0;
+bool yellowGroupAdd = false;
 
 // ================================
 // Handle Events for switches (points)
@@ -161,6 +206,8 @@ void handleEvent() {
 
     case PATH_HIT:
       addPoints(50);
+      pathLedStartTime = millis(); // Start timer for path LED
+      pathLedBlinking = true; // Start blinking the path LED
       break;
 
     case TOP_GROUP_HIT:
@@ -169,6 +216,8 @@ void handleEvent() {
 
     case BOTTOM_TARGET_HIT:
       addPoints(10);
+      targetLedStartTime = millis(); // Start timer for target LED
+      targetLedBlinking = true; // Start blinking the target LED
       break;
 
     case RED_GROUP_HIT:
@@ -206,6 +255,59 @@ void resetPoints(){
 }
 
 
+
+// ================================
+// LEDs Logic 
+// ================================
+void updateLEDs() {
+  // Blinking LEDs
+  if (pathLedBlinking) {
+    if(millis() - pathLedStartTime < 3000) { // Blink for 3 seconds
+      digitalWrite(PATH_LED, PATH_LED, millis()%500>200); // Blink every 250ms
+    } else {
+      digitalWrite(PATH_LED, HIGH); // Keep the path LED on
+      pathLedBlinking = false;
+    }
+  }
+
+  if (targetLedBlinking) {
+    if(millis() - targetLedStartTime < 3000) { // Blink for 3 seconds
+      digitalWrite(TARGET_LED, PATH_LED, millis()%500>200); // Blink every 250ms
+    } else {
+      digitalWrite(TARGET_LED, HIGH); // Keep the target LED on
+      targetLedBlinking = false;
+    }
+  }
+
+  // Turn on LEDs based on EVENT
+  if (currentEvent == TOP_GROUP_HIT) {
+    digitalWrite(TW_LED, HIGH);
+    topGroupMillis = millis(); // Start timer for top group LED
+  }
+  if (currentEvent == RED_GROUP_HIT) {
+    digitalWrite(RED_LED, HIGH);
+    redGroupMillis = millis(); // Start timer for red group LED
+  }
+  if (currentEvent == YELLOW_GROUP_HIT) {
+    digitalWrite(YELLOW_LED, HIGH);
+    yellowGroupMillis = millis(); // Start timer for yellow group LED
+  }
+
+  // Turn off LEDs
+  if (millis() - topGroupMillis > 5000) { // Keep the top group LED on for 3 seconds
+    digitalWrite(TW_LED, LOW);
+  }
+  if (millis() - redGroupMillis > 5000) { // Keep the red group LED on for 3 seconds
+    digitalWrite(RED_LED, LOW);
+  }
+  if (millis() - yellowGroupMillis > 5000) { // Keep the yellow group LED on for 3 seconds
+    digitalWrite(YELLOW_LED, LOW);
+  }
+
+}
+
+
+
 // -------- Main Loop to read inputs --------
 void loop() {
 
@@ -213,8 +315,10 @@ void loop() {
     handleBottomTargets();
     handleMiddleRedYellow();
     handleBallRelease();
-    readInputsPoints();
     handleEvent();
+    updateLEDs();
+    readInputsPoints();
+
     //Serial.println(digitalRead(path)); //use for debugging to check wiring (111 = correct, 101 = wiring not done correctly)
     //If actuators are too slow use millis() debounce or edge detection
     delay(500); //debounce
