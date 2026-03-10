@@ -261,8 +261,9 @@ void loop() {
     handleBottomTargets();
     handleMiddleRedYellow();
     handleBallRelease();
-    readInputsPoints();
     handleEvent();
+    readInputsPoints();
+
     delay(1);
     //Serial.println(digitalRead(path)); //use for debugging to check wiring (111 = correct, 101 = wiring not done correctly)
     // No blocking delay: relay outputs stay responsive while score hits are rate-limited above.
