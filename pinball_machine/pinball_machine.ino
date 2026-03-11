@@ -106,17 +106,23 @@ void readInputsPoints(){
 
   if(pathState != previousPathState) {
     lastHitTime = millis();
+    currentEvent = PATH_HIT;
   } if(topState != previousTopState) {
     lastHitTime = millis();
+    currentEvent = TOP_GROUP_HIT;
   } if(targetState != previousTargetState) {
     lastHitTime = millis();
+    currentEvent = BOTTOM_TARGET_HIT;
   } if(redState != previousRedState) {
     lastHitTime = millis();
+    currentEvent = RED_GROUP_HIT;
   } if(yellowState != previousYellowState) {
     lastHitTime = millis();
+    currentEvent = YELLOW_GROUP_HIT;
   } if(onOffState != previousOnOffState) {
     lastHitTime = millis();
-  }
+    currentEvent = ON_OFF_HIT;
+  } 
 
 
   unsigned long now = millis();
@@ -261,8 +267,8 @@ void loop() {
     handleBottomTargets();
     handleMiddleRedYellow();
     handleBallRelease();
-    handleEvent();
     readInputsPoints();
+    handleEvent();
 
     delay(1);
     //Serial.println(digitalRead(path)); //use for debugging to check wiring (111 = correct, 101 = wiring not done correctly)
