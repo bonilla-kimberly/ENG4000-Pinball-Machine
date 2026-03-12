@@ -263,7 +263,7 @@ void updateLEDs() {
   // Blinking LEDs
   if (pathLedBlinking) {
     if(millis() - pathLedStartTime < 3000) { // Blink for 3 seconds
-      digitalWrite(PATH_LED, PATH_LED, millis()%500>200); // Blink every 250ms
+      digitalWrite(PATH_LED, (millis() % 500 > 200) ? LOW : HIGH); // Blink every 250ms
     } else {
       digitalWrite(PATH_LED, HIGH); // Keep the path LED on
       pathLedBlinking = false;
@@ -272,7 +272,7 @@ void updateLEDs() {
 
   if (targetLedBlinking) {
     if(millis() - targetLedStartTime < 3000) { // Blink for 3 seconds
-      digitalWrite(TARGET_LED, PATH_LED, millis()%500>200); // Blink every 250ms
+     digitalWrite(TARGET_LED, (millis() % 500 > 200) ? LOW : HIGH); // Blink every 250ms
     } else {
       digitalWrite(TARGET_LED, HIGH); // Keep the target LED on
       targetLedBlinking = false;
