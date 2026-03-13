@@ -62,6 +62,15 @@ const int R_LED5 = 45;
 
 // -------- Score logic --------
 int score = 0; // initial set to 0
+const unsigned long HIT_COOLDOWN_MS = 500;
+unsigned long lastHitTime = 0;
+
+int previousPathState = RELEASED;
+int previousTopState = RELEASED;
+int previousTargetState = RELEASED;
+int previousRedState = RELEASED;
+int previousYellowState = RELEASED;
+int previousOnOffState = RELEASED;
 
 // ================================
 // Switch Table (Different Events)
@@ -117,22 +126,67 @@ void setup() {
 // Read Input switches for points (switch based (instant event))
 // ================================
 void readInputsPoints(){
-if(digitalRead(path) == PRESSED){
-    currentEvent = PATH_HIT;
-  } else if (digitalRead(TW_switch) == PRESSED) {
-    currentEvent = TOP_GROUP_HIT;
-  } else if (digitalRead(target_sw) == PRESSED) {
-    currentEvent = BOTTOM_TARGET_HIT;
-  }  else if (digitalRead(RED_sw_bumper) == PRESSED) {
-    currentEvent = RED_GROUP_HIT;
-  }  else if (digitalRead(YELLOW_sw_bumper) == PRESSED) {
-    currentEvent = YELLOW_GROUP_HIT;
-  }  else if (digitalRead(ON_OFF_sw) == PRESSED) {
-    currentEvent = ON_OFF_HIT;
-  } else {
-    currentEvent = NO_EVENT;
+  currentEvent = NO_EVENT;
+
+  int pathState = digitalRead(path);
+  int topState = digitalRead(TW_switch);
+  int targetState = digitalRead(target_sw);
+  int redState = digitalRead(RED_sw_bumper);
+  int yellowState = digitalRead(YELLOW_sw_bumper);
+  int onOffState = digitalRead(ON_OFF_sw);
+
+  // if(pathState != previousPathState) {
+  //   lastHitTime = millis();
+  //   currentEvent = PATH_HIT;
+  // } if(topState != previousTopState) {
+  //   lastHitTime = millis();
+  //   currentEvent = TOP_GROUP_HIT;
+  // } if(targetState != previousTargetState) {
+  //   lastHitTime = millis();
+  //   currentEvent = BOTTOM_TARGET_HIT;
+  // } if(redState != previousRedState) {
+  //   lastHitTime = millis();
+  //   currentEvent = RED_GROUP_HIT;
+  // } if(yellowState != previousYellowState) {
+  //   lastHitTime = millis();
+  //   currentEvent = YELLOW_GROUP_HIT;
+  // } if(onOffState != previousOnOffState) {
+  //   lastHitTime = millis();
+  //   currentEvent = ON_OFF_HIT;
+  // } 
+
+
+  unsigned long now = millis();
+  bool cooldownActive = (now - lastHitTime) > HIT_COOLDOWN_MS;
+
+  if (cooldownActive) {
+    if (pathState == PRESSED && previousPathState == RELEASED) {
+      currentEvent = PATH_HIT;
+      lastHitTime = now;
+    } else if (topState == PRESSED && previousTopState == RELEASED) {
+      currentEvent = TOP_GROUP_HIT;
+      lastHitTime = now;
+    } else if (targetState == PRESSED && previousTargetState == RELEASED) {
+      currentEvent = BOTTOM_TARGET_HIT;
+      lastHitTime = now;
+    } else if (redState == PRESSED && previousRedState == RELEASED) {
+      currentEvent = RED_GROUP_HIT;
+      lastHitTime = now;
+    } else if (yellowState == PRESSED && previousYellowState == RELEASED) {
+      currentEvent = YELLOW_GROUP_HIT;
+      lastHitTime = now;
+    } else if (onOffState == PRESSED && previousOnOffState == RELEASED) {
+      currentEvent = ON_OFF_HIT;
+      lastHitTime = now;
+    }
   }
 
+  previousPathState = pathState;
+  previousTopState = topState;
+  previousTargetState = targetState;
+  previousRedState = redState;
+  previousYellowState = yellowState;
+  previousOnOffState = onOffState;
 }
 
 // ================================
@@ -318,10 +372,10 @@ void loop() {
     handleEvent();
     updateLEDs();
     readInputsPoints();
+    delay(1);
 
     //Serial.println(digitalRead(path)); //use for debugging to check wiring (111 = correct, 101 = wiring not done correctly)
-    //If actuators are too slow use millis() debounce or edge detection
-    delay(500); //debounce
+    // No blocking delay: relay outputs stay responsive while score hits are rate-limited above.
 
 }
 
