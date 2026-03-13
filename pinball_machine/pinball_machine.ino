@@ -1,130 +1,306 @@
 // ================================
-// Main Pinball Machine Class Cotroller 
-// - Handle inputs: read switches, buttons, sensors
+// Main Pinball Machine Class Controller
 // ================================
-
 
 // -------- Pin Definitions --------
-//External switch (button on playfield) = L_flipper_sw
-//External switch (button on playfield) = R_flipper_sw
-//Pin on Relay for right flipper solenoid = L_flipper
-//Pin on Relay for ball relase solenoid = R_flipper
 
-const int L_flipper_sw = 4; 
-const int R_flipper_sw = 5; 
-const int L_flipper = 6;
-const int R_flipper = 7;
+//Group 1 (top section) 5 points - Only switches 
+const int TW_switch = 1; //TW1,2,3,4,Y,R switch
 
-//Pin on 10 point scoring BL, BR, ML, MR, TL, TR path and LW,RW bumper = 10_points
-const int points10 = 9;
+//Group 2 + 3 (Yellow and Red Middle traffic light) 10 points for now - Switches and bumpers 
+const int RED_sw_bumper = 2; //TR, ML
+const int RED_bump = 3;
+const int YELLOW_sw_bumper = 4; //TL, MR
+const int YELLOW_bump = 5;
 
-//Pin on bumpers with relation to LED combo scoring
-const int TL_bumper = 10;
-const int TR_bumper = 11;
-const int ML_bumper = 12;
-const int MR_bumper = 13;
+//Group 4 + 5 (paths) 50 points - Only switches
+const int path = 6; //BR, BL, ML, MR, TL, TR path, W_bumpers
 
-//Pin on targets
-const int BR_target = 14;
-const int BL_target = 15;
-const int Y_target = 16;
-const int R_target = 17;
+//Group 6 (bottom target) 10 points - Switches and bumpers 
+const int target_sw = 7; //BL, BR target switch
+const int target_bump = 8; //BL,BR target bump
 
-//pin on LED switches
-const int R1_switch = 18;
-const int Y2_switch = 19;
-const int R3_switch= 20;
-const int Y4_switch = 21;
+//Group 7 + 8 (right and left flippers) - Switches and solenoid 
+const int L_flipper_sw = 9;
+const int R_flipper_sw = 10;
+const int L_flipper = 11;
+const int R_flipper = 12;
 
-//Score counter initial 0
-int score = 0;
+//Group 9 (Ball release) - Switches and bumpers 
+const int ball_release_sw = 13;
+const int ball_release = 14;
 
-// -------- Setup --------
-// HIGH == relay and button are off 
-// LOW == relay and button are on  
+//Group 10 (ON/OFF) - Only switches
+const int ON_OFF_sw = 15;
+
+// -------- Switch logic --------
+const int PRESSED = LOW;
+const int RELEASED = HIGH;
+
+// -------- Relay logic --------
+const int RELAY_ON = LOW;
+const int RELAY_OFF = HIGH;
+
+
+// -------- Score logic --------
+int score = 0; // initial set to 0
+const unsigned long HIT_COOLDOWN_MS = 500;
+unsigned long lastHitTime = 0;
+
+int previousPathState = RELEASED;
+int previousTopState = RELEASED;
+int previousTargetState = RELEASED;
+int previousRedState = RELEASED;
+int previousYellowState = RELEASED;
+int previousOnOffState = RELEASED;
+
+// ================================
+// Switch Table (Different Events)
+// ================================
+enum Event {
+  NO_EVENT,
+  PATH_HIT,
+  TOP_GROUP_HIT,
+  BOTTOM_TARGET_HIT,
+  RED_GROUP_HIT,
+  YELLOW_GROUP_HIT,
+  ON_OFF_HIT
+};
+
+Event currentEvent = NO_EVENT;
+
+// -------- Setup ------------
 void setup() {
-  Serial.begin(115200);            
-                       
+  Serial.begin(115200);
+  const int NUM_SWITCHES[] = {path, L_flipper_sw, R_flipper_sw, TW_switch, target_sw, RED_sw_bumper, YELLOW_sw_bumper, ball_release_sw, ON_OFF_sw};
 
-  pinMode(L_flipper_sw, INPUT_PULLUP);
-  pinMode(R_flipper_sw, INPUT_PULLUP);
+  const int NUM_ACTUATORS[] = {L_flipper, R_flipper, target_bump, RED_bump, YELLOW_bump, ball_release};
 
-  pinMode(L_flipper, OUTPUT);
-  pinMode(R_flipper, OUTPUT);
+  const int NUM_RELAYS[] = {L_flipper, R_flipper, target_bump, RED_bump, YELLOW_bump, ball_release};
 
-//bumpers
-  pinMode(points10, INPUT_PULLUP);
-  pinMode(TL_bumper, INPUT_PULLUP);
-  pinMode(TR_bumper, INPUT_PULLUP);
-  pinMode(ML_bumper, INPUT_PULLUP);
-  pinMode(MR_bumper, INPUT_PULLUP);
-
-  // Default all should be turned off
-  digitalWrite(L_flipper, HIGH); 
-  digitalWrite(R_flipper, HIGH);
-}
-
-// -------- Main Loop --------
-void loop() {
-//Read values coming from button and relay
-  int buttonState = digitalRead(L_flipper_sw);
-  int buttonState2 = digitalRead(R_flipper_sw);
-
-  int point10s = digitalRead(points10);
-
-  Serial.print("Button: ");
-  Serial.print(buttonState);
-  Serial.print(buttonState2);
-
-  // use for debugging 
-  int relayState = digitalRead(L_flipper);
-  Serial.print("Relay: ");
-  Serial.println(relayState);
-
-  // display score
-  Serial.print("Score: ");
-  Serial.println(score);
-
-  //flippers
-  if (buttonState == LOW) {
-    activateActuatorL();
-  } if (buttonState2 == LOW) {
-    activateActuatorR();
+  for(int i = 0; i < sizeof(NUM_SWITCHES) / sizeof(NUM_SWITCHES[0]); i++){
+      pinMode(NUM_SWITCHES[i], INPUT_PULLUP);
   }
 
-  //score
-  //if (){}
+  for(int i = 0; i < sizeof(NUM_ACTUATORS) / sizeof(NUM_ACTUATORS[0]); i++){
+    pinMode(NUM_ACTUATORS[i], OUTPUT);
+  }
 
-  delay(200); //debounce delay 
+  for(int i = 0; i < sizeof(NUM_RELAYS) / sizeof(NUM_RELAYS[0]); i++){
+    digitalWrite(NUM_RELAYS[i], RELAY_OFF);
+  }
 }
 
 // ================================
-// ActuatorSystem 
-// - activates solenoinds via relays (flippers, bumper, ball relase solenoid)
+// Read Input switches for points (switch based (instant event))
 // ================================
+void readInputsPoints(){
+  currentEvent = NO_EVENT;
 
-void activateActuatorL() {
-  digitalWrite(L_flipper, LOW);  
+  int pathState = digitalRead(path);
+  int topState = digitalRead(TW_switch);
+  int targetState = digitalRead(target_sw);
+  int redState = digitalRead(RED_sw_bumper);
+  int yellowState = digitalRead(YELLOW_sw_bumper);
+  int onOffState = digitalRead(ON_OFF_sw);
+
+  // if(pathState != previousPathState) {
+  //   lastHitTime = millis();
+  //   currentEvent = PATH_HIT;
+  // } if(topState != previousTopState) {
+  //   lastHitTime = millis();
+  //   currentEvent = TOP_GROUP_HIT;
+  // } if(targetState != previousTargetState) {
+  //   lastHitTime = millis();
+  //   currentEvent = BOTTOM_TARGET_HIT;
+  // } if(redState != previousRedState) {
+  //   lastHitTime = millis();
+  //   currentEvent = RED_GROUP_HIT;
+  // } if(yellowState != previousYellowState) {
+  //   lastHitTime = millis();
+  //   currentEvent = YELLOW_GROUP_HIT;
+  // } if(onOffState != previousOnOffState) {
+  //   lastHitTime = millis();
+  //   currentEvent = ON_OFF_HIT;
+  // } 
+
+
+  unsigned long now = millis();
+  bool cooldownActive = (now - lastHitTime) > HIT_COOLDOWN_MS;
+
+  if (cooldownActive) {
+    if (pathState == PRESSED && previousPathState == RELEASED) {
+      currentEvent = PATH_HIT;
+      lastHitTime = now;
+    } else if (topState == PRESSED && previousTopState == RELEASED) {
+      currentEvent = TOP_GROUP_HIT;
+      lastHitTime = now;
+    } else if (targetState == PRESSED && previousTargetState == RELEASED) {
+      currentEvent = BOTTOM_TARGET_HIT;
+      lastHitTime = now;
+    } else if (redState == PRESSED && previousRedState == RELEASED) {
+      currentEvent = RED_GROUP_HIT;
+      lastHitTime = now;
+    } else if (yellowState == PRESSED && previousYellowState == RELEASED) {
+      currentEvent = YELLOW_GROUP_HIT;
+      lastHitTime = now;
+    } else if (onOffState == PRESSED && previousOnOffState == RELEASED) {
+      currentEvent = ON_OFF_HIT;
+      lastHitTime = now;
+    }
+  }
+
+  previousPathState = pathState;
+  previousTopState = topState;
+  previousTargetState = targetState;
+  previousRedState = redState;
+  previousYellowState = yellowState;
+  previousOnOffState = onOffState;
 }
 
-void activateActuatorR() {
-  digitalWrite(R_flipper, LOW); 
+// ================================
+// Read Input switches to activate relay (continous control)
+// ================================
+void handleFLippers() {
+if(digitalRead(L_flipper_sw) == PRESSED){
+    digitalWrite(L_flipper, RELAY_ON);
+  } else {
+     digitalWrite(L_flipper, RELAY_OFF);
+  }
+
+if(digitalRead(R_flipper_sw) == PRESSED){
+    digitalWrite(R_flipper, RELAY_ON);
+  } else {
+     digitalWrite(R_flipper, RELAY_OFF);
+  }
 }
 
-void deactivateActuators() {
-    digitalWrite(L_flipper, HIGH);                         
-    digitalWrite(R_flipper, HIGH); 
+void handleBottomTargets() {
+if(digitalRead(target_sw) == PRESSED){
+    digitalWrite(target_bump, RELAY_ON);
+  } else {
+     digitalWrite(target_bump, RELAY_OFF);
+  }
+
+}
+
+void handleMiddleRedYellow() {
+if(digitalRead(RED_sw_bumper) == PRESSED){
+    digitalWrite(RED_bump, RELAY_ON);
+  } else {
+     digitalWrite(RED_bump, RELAY_OFF);
+  }
+
+  if(digitalRead(YELLOW_sw_bumper) == PRESSED){
+    digitalWrite(YELLOW_bump, RELAY_ON);
+  } else {
+     digitalWrite(YELLOW_bump, RELAY_OFF);
+  }
+}
+
+void handleBallRelease() {
+  if(digitalRead(ball_release_sw) == PRESSED){
+    digitalWrite(ball_release, RELAY_ON);
+  } else {
+     digitalWrite(ball_release, RELAY_OFF);
+  }
+
 }
 
 // ================================
-// ScoringSystem
-// - Stores score
-// - counts score and combos
+// Handle Events for switches (points)
 // ================================
+void handleEvent() {
+  switch (currentEvent) {
 
-void addPoints(int points) {
+    case PATH_HIT:
+      addPoints(50);
+      break;
+
+    case TOP_GROUP_HIT:
+      addPoints(5);
+      break;
+
+    case BOTTOM_TARGET_HIT:
+      addPoints(10);
+      break;
+
+    case RED_GROUP_HIT:
+      addPoints(10);
+      break;
+
+    case YELLOW_GROUP_HIT:
+      addPoints(10);
+      break;
+
+    case ON_OFF_HIT:
+      resetPoints();
+      break;
+      
+    case NO_EVENT:
+      break;
+  }
+}
+
+// ================================
+// Score Logic 
+// ================================
+void addPoints(int points){
   score += points;
+  Serial.print("Score +");
+  Serial.print(points);
+  Serial.print(" => ");
+  Serial.println(score);
 }
+
+void resetPoints(){
+  score = 0;
+  Serial.print("Score reset => ");
+  Serial.println(score);
+}
+
+
+// -------- Main Loop to read inputs --------
+void loop() {
+
+    handleFLippers();
+    handleBottomTargets();
+    handleMiddleRedYellow();
+    handleBallRelease();
+    readInputsPoints();
+    handleEvent();
+
+    delay(1);
+    //Serial.println(digitalRead(path)); //use for debugging to check wiring (111 = correct, 101 = wiring not done correctly)
+    // No blocking delay: relay outputs stay responsive while score hits are rate-limited above.
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
