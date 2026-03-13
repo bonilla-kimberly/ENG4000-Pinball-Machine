@@ -48,17 +48,17 @@ const int RED_LED = 18;  //off TR, ML LED
 const int YELLOW_LED = 19; //off TL, MR LED
 const int P_LED = 20; //off Special
 const int PATH_LED = 21; //on BR, BL, ML, MR, TL, TR path LED
-const int BALL_RELEASE_LED = 35; //off ball release LED
-const int Y_LED1 = 36; //off 
-const int Y_LED2 = 37;
-const int Y_LED3 = 38;
-const int Y_LED4 = 39;
-const int Y_LED5 = 40;
-const int R_LED1 = 41; //off
-const int R_LED2 = 42;
-const int R_LED3 = 43;
-const int R_LED4 = 44;
-const int R_LED5 = 45;
+// const int BALL_RELEASE_LED = 35; //off ball release LED
+// const int Y_LED1 = 36; //off 
+// const int Y_LED2 = 37;
+// const int Y_LED3 = 38;
+// const int Y_LED4 = 39;
+// const int Y_LED5 = 40;
+// const int R_LED1 = 41; //off
+// const int R_LED2 = 42;
+// const int R_LED3 = 43;
+// const int R_LED4 = 44;
+// const int R_LED5 = 45;
 
 // -------- Score logic --------
 int score = 0; // initial set to 0
@@ -96,7 +96,7 @@ void setup() {
 
   const int NUM_RELAYS[] = {L_flipper, R_flipper, target_bump, RED_bump, YELLOW_bump, ball_release};
 
-  const int NUM_LEDS[] = {TW_LED, RED_LED, YELLOW_LED, P_LED, BALL_RELEASE_LED, Y_LED1, Y_LED2, Y_LED3, Y_LED4, Y_LED5, R_LED1, R_LED2, R_LED3, R_LED4, R_LED5};
+  //const int NUM_LEDS[] = {TW_LED, RED_LED, YELLOW_LED, P_LED, BALL_RELEASE_LED, Y_LED1, Y_LED2, Y_LED3, Y_LED4, Y_LED5, R_LED1, R_LED2, R_LED3, R_LED4, R_LED5};
 
   for(int i = 0; i < sizeof(NUM_SWITCHES) / sizeof(NUM_SWITCHES[0]); i++){
       pinMode(NUM_SWITCHES[i], INPUT_PULLUP);
@@ -110,10 +110,10 @@ void setup() {
     digitalWrite(NUM_RELAYS[i], RELAY_OFF);
   }
 
-  for(int i = 0; i < sizeof(NUM_LEDS) / sizeof(NUM_LEDS[0]); i++){
-    pinMode(NUM_LEDS[i], OUTPUT);
-    digitalWrite(NUM_LEDS[i], LOW); // turn off all LEDs at start
-  }
+  // for(int i = 0; i < sizeof(NUM_LEDS) / sizeof(NUM_LEDS[0]); i++){
+  //   pinMode(NUM_LEDS[i], OUTPUT);
+  //   digitalWrite(NUM_LEDS[i], LOW); // turn off all LEDs at start
+  // }
 
   pinMode(PATH_LED, OUTPUT);
   digitalWrite(PATH_LED, HIGH); // turn on path LED at start
@@ -291,24 +291,6 @@ void handleEvent() {
   }
 }
 
-// ================================
-// Score Logic 
-// ================================
-void addPoints(int points){
-  score += points;
-  Serial.print("Score +");
-  Serial.print(points);
-  Serial.print(" => ");
-  Serial.println(score);
-}
-
-void resetPoints(){
-  score = 0;
-  Serial.print("Score reset => ");
-  Serial.println(score);
-}
-
-
 
 // ================================
 // LEDs Logic 
@@ -333,31 +315,48 @@ void updateLEDs() {
     }
   }
 
-  // Turn on LEDs based on EVENT
-  if (currentEvent == TOP_GROUP_HIT) {
-    digitalWrite(TW_LED, HIGH);
-    topGroupMillis = millis(); // Start timer for top group LED
-  }
-  if (currentEvent == RED_GROUP_HIT) {
-    digitalWrite(RED_LED, HIGH);
-    redGroupMillis = millis(); // Start timer for red group LED
-  }
-  if (currentEvent == YELLOW_GROUP_HIT) {
-    digitalWrite(YELLOW_LED, HIGH);
-    yellowGroupMillis = millis(); // Start timer for yellow group LED
-  }
+//   // Turn on LEDs based on EVENT
+//   if (currentEvent == TOP_GROUP_HIT) {
+//     digitalWrite(TW_LED, HIGH);
+//     topGroupMillis = millis(); // Start timer for top group LED
+//   }
+//   if (currentEvent == RED_GROUP_HIT) {
+//     digitalWrite(RED_LED, HIGH);
+//     redGroupMillis = millis(); // Start timer for red group LED
+//   }
+//   if (currentEvent == YELLOW_GROUP_HIT) {
+//     digitalWrite(YELLOW_LED, HIGH);
+//     yellowGroupMillis = millis(); // Start timer for yellow group LED
+//   }
 
-  // Turn off LEDs
-  if (millis() - topGroupMillis > 5000) { // Keep the top group LED on for 3 seconds
-    digitalWrite(TW_LED, LOW);
-  }
-  if (millis() - redGroupMillis > 5000) { // Keep the red group LED on for 3 seconds
-    digitalWrite(RED_LED, LOW);
-  }
-  if (millis() - yellowGroupMillis > 5000) { // Keep the yellow group LED on for 3 seconds
-    digitalWrite(YELLOW_LED, LOW);
-  }
+//   // Turn off LEDs
+//   if (millis() - topGroupMillis > 5000) { // Keep the top group LED on for 3 seconds
+//     digitalWrite(TW_LED, LOW);
+//   }
+//   if (millis() - redGroupMillis > 5000) { // Keep the red group LED on for 3 seconds
+//     digitalWrite(RED_LED, LOW);
+//   }
+//   if (millis() - yellowGroupMillis > 5000) { // Keep the yellow group LED on for 3 seconds
+//     digitalWrite(YELLOW_LED, LOW);
+//   }
 
+}
+
+// ================================
+// Score Logic 
+// ================================
+void addPoints(int points){
+  score += points;
+  Serial.print("Score +");
+  Serial.print(points);
+  Serial.print(" => ");
+  Serial.println(score);
+}
+
+void resetPoints(){
+  score = 0;
+  Serial.print("Score reset => ");
+  Serial.println(score);
 }
 
 
