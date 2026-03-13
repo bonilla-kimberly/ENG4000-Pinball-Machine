@@ -44,7 +44,7 @@ const int RELAY_OFF = HIGH;
 
 // -------- Score logic --------
 int score = 0; // initial set to 0
-const unsigned long HIT_COOLDOWN_MS = 1000;
+const unsigned long HIT_COOLDOWN_MS = 500;
 unsigned long lastHitTime = 0;
 
 int previousPathState = RELEASED;
@@ -104,31 +104,31 @@ void readInputsPoints(){
   int yellowState = digitalRead(YELLOW_sw_bumper);
   int onOffState = digitalRead(ON_OFF_sw);
 
-  if(pathState != previousPathState) {
-    lastHitTime = millis();
-    currentEvent = PATH_HIT;
-  } if(topState != previousTopState) {
-    lastHitTime = millis();
-    currentEvent = TOP_GROUP_HIT;
-  } if(targetState != previousTargetState) {
-    lastHitTime = millis();
-    currentEvent = BOTTOM_TARGET_HIT;
-  } if(redState != previousRedState) {
-    lastHitTime = millis();
-    currentEvent = RED_GROUP_HIT;
-  } if(yellowState != previousYellowState) {
-    lastHitTime = millis();
-    currentEvent = YELLOW_GROUP_HIT;
-  } if(onOffState != previousOnOffState) {
-    lastHitTime = millis();
-    currentEvent = ON_OFF_HIT;
-  } 
+  // if(pathState != previousPathState) {
+  //   lastHitTime = millis();
+  //   currentEvent = PATH_HIT;
+  // } if(topState != previousTopState) {
+  //   lastHitTime = millis();
+  //   currentEvent = TOP_GROUP_HIT;
+  // } if(targetState != previousTargetState) {
+  //   lastHitTime = millis();
+  //   currentEvent = BOTTOM_TARGET_HIT;
+  // } if(redState != previousRedState) {
+  //   lastHitTime = millis();
+  //   currentEvent = RED_GROUP_HIT;
+  // } if(yellowState != previousYellowState) {
+  //   lastHitTime = millis();
+  //   currentEvent = YELLOW_GROUP_HIT;
+  // } if(onOffState != previousOnOffState) {
+  //   lastHitTime = millis();
+  //   currentEvent = ON_OFF_HIT;
+  // } 
 
 
   unsigned long now = millis();
-  bool cooldownActive = (now - lastHitTime) < HIT_COOLDOWN_MS;
+  bool cooldownActive = (now - lastHitTime) > HIT_COOLDOWN_MS;
 
-  if (!cooldownActive) {
+  if (cooldownActive) {
     if (pathState == PRESSED && previousPathState == RELEASED) {
       currentEvent = PATH_HIT;
       lastHitTime = now;
