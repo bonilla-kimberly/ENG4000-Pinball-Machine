@@ -67,6 +67,8 @@ int score = 0; // initial set to 0
 const unsigned long HIT_COOLDOWN_MS = 500;
 unsigned long lastHitTime = 0;
 
+bool specialMode = false;
+
 int previousPathState = RELEASED;
 int previousTopState = RELEASED;
 int previousTargetState = RELEASED;
@@ -262,33 +264,33 @@ void handleEvent() {
   switch (currentEvent) {
 
     case PATH_HIT:
-      if(digitalRead(P_LED) == RELAY_OFF) { // Only add 5 points if the last red or yellow LED is off
-        addPoints(5);
-      }else{
+      if(specialMode) { // Only add 5 points if the last red or yellow LED is off
         addPoints(50);
+      }else{
+        addPoints(5);
       }
       
       //pathLedStartTime = millis(); // Start timer for path LED
-      // pathLedBlinking = true; // Start blinking the path LED
+      //pathLedBlinking = true; // Start blinking the path LED
       break;
 
     case TOP_GROUP_HIT:
-      if(digitalRead(P_LED) == RELAY_OFF) { // Only add points if the special LED is off
-        addPoints(5);
-      }else{
+      if(specialMode) { // Only add points if the special LED is off
         addPoints(50);
+      }else{
+        addPoints(5);
       }
       break;
 
     case BOTTOM_TARGET_HIT:
-      if(digitalRead(P_LED) == RELAY_OFF){
-        addPoints(5);
-      } else{
+      if(specialMode) {
         addPoints(10);
+      } else{
+        addPoints(5);
       }
       
       //targetLedStartTime = millis(); // Start timer for target LED
-      targetLedBlinking = true; // Start blinking the target LED
+      //targetLedBlinking = true; // Start blinking the target LED
       break;
 
     case RED_GROUP_HIT:
