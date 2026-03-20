@@ -260,8 +260,9 @@ void handleEvent() {
 
     case PATH_HIT:
       addPoints(50);
-      pathLedStartTime = millis(); // Start timer for path LED
-      pathLedBlinking = true; // Start blinking the path LED
+      
+      //pathLedStartTime = millis(); // Start timer for path LED
+      // pathLedBlinking = true; // Start blinking the path LED
       break;
 
     case TOP_GROUP_HIT:
@@ -270,7 +271,8 @@ void handleEvent() {
 
     case BOTTOM_TARGET_HIT:
       addPoints(10);
-      targetLedStartTime = millis(); // Start timer for target LED
+      
+      //targetLedStartTime = millis(); // Start timer for target LED
       targetLedBlinking = true; // Start blinking the target LED
       break;
 
@@ -308,55 +310,30 @@ void resetPoints(){
   Serial.println(score);
 }
 
+  // if (pathLedBlinking) {
+  //   if(millis() - pathLedStartTime < 3000) { // Blink for 3 seconds
+  //     digitalWrite(PATH_LED, PATH_LED, millis()%500>200); // Blink every 250ms
+  //   } else {
+  //     digitalWrite(PATH_LED, HIGH); // Keep the path LED on
+  //     pathLedBlinking = false;
+  //   }
+  // }
 
+  // // Turn on LEDs based on EVENT
+  // if (currentEvent == TOP_GROUP_HIT) {
+  //   digitalWrite(TW_LED, HIGH);
+  //   topGroupMillis = millis(); // Start timer for top group LED
+  // }
+  //   // Turn off LEDs
+  // if (millis() - topGroupMillis > 5000) { // Keep the top group LED on for 3 seconds
+  //   digitalWrite(TW_LED, LOW);
+  // }
 
 // ================================
 // LEDs Logic 
 // ================================
 void updateLEDs() {
-  // Blinking LEDs
-  if (pathLedBlinking) {
-    if(millis() - pathLedStartTime < 3000) { // Blink for 3 seconds
-      digitalWrite(PATH_LED, PATH_LED, millis()%500>200); // Blink every 250ms
-    } else {
-      digitalWrite(PATH_LED, HIGH); // Keep the path LED on
-      pathLedBlinking = false;
-    }
-  }
-
-  if (targetLedBlinking) {
-    if(millis() - targetLedStartTime < 3000) { // Blink for 3 seconds
-      digitalWrite(TARGET_LED, PATH_LED, millis()%500>200); // Blink every 250ms
-    } else {
-      digitalWrite(TARGET_LED, HIGH); // Keep the target LED on
-      targetLedBlinking = false;
-    }
-  }
-
-  // Turn on LEDs based on EVENT
-  if (currentEvent == TOP_GROUP_HIT) {
-    digitalWrite(TW_LED, HIGH);
-    topGroupMillis = millis(); // Start timer for top group LED
-  }
-  if (currentEvent == RED_GROUP_HIT) {
-    digitalWrite(RED_LED, HIGH);
-    redGroupMillis = millis(); // Start timer for red group LED
-  }
-  if (currentEvent == YELLOW_GROUP_HIT) {
-    digitalWrite(YELLOW_LED, HIGH);
-    yellowGroupMillis = millis(); // Start timer for yellow group LED
-  }
-
-  // Turn off LEDs
-  if (millis() - topGroupMillis > 5000) { // Keep the top group LED on for 3 seconds
-    digitalWrite(TW_LED, LOW);
-  }
-  if (millis() - redGroupMillis > 5000) { // Keep the red group LED on for 3 seconds
-    digitalWrite(RED_LED, LOW);
-  }
-  if (millis() - yellowGroupMillis > 5000) { // Keep the yellow group LED on for 3 seconds
-    digitalWrite(YELLOW_LED, LOW);
-  }
+  
 
 }
 
