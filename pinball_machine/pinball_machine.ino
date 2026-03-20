@@ -140,27 +140,6 @@ void readInputsPoints(){
   int yellowState = digitalRead(YELLOW_sw_bumper);
   int onOffState = digitalRead(ON_OFF_sw);
 
-  // if(pathState != previousPathState) {
-  //   lastHitTime = millis();
-  //   currentEvent = PATH_HIT;
-  // } if(topState != previousTopState) {
-  //   lastHitTime = millis();
-  //   currentEvent = TOP_GROUP_HIT;
-  // } if(targetState != previousTargetState) {
-  //   lastHitTime = millis();
-  //   currentEvent = BOTTOM_TARGET_HIT;
-  // } if(redState != previousRedState) {
-  //   lastHitTime = millis();
-  //   currentEvent = RED_GROUP_HIT;
-  // } if(yellowState != previousYellowState) {
-  //   lastHitTime = millis();
-  //   currentEvent = YELLOW_GROUP_HIT;
-  // } if(onOffState != previousOnOffState) {
-  //   lastHitTime = millis();
-  //   currentEvent = ON_OFF_HIT;
-  // } 
-
-
   unsigned long now = millis();
   bool cooldownActive = (now - lastHitTime) > HIT_COOLDOWN_MS;
 
@@ -382,7 +361,29 @@ void resetPoints(){
 // LEDs Logic 
 // ================================
 void updateLEDs() {
-  
+  if(currentEvent == PATH_HIT) {
+    digitalWrite(PATH_LED, HIGH); // Turn on path LED when path is hit
+  }
+
+  if(currentEvent == TOP_GROUP_HIT) {
+    digitalWrite(TW_LED, HIGH); // Turn on TW LED when top group is hit
+  }
+
+  if(currentEvent == BOTTOM_TARGET_HIT) {
+    digitalWrite(TARGET_LED, LOW); // Turn on target LED when bottom target is hit
+  }
+
+  if(currentEvent == RED_GROUP_HIT) {
+    digitalWrite(RED_LED, HIGH); // Turn on red LED when red group is hit
+  }
+
+  if(currentEvent == YELLOW_GROUP_HIT) {
+    digitalWrite(YELLOW_LED, HIGH); // Turn on yellow LED when yellow group is hit
+  }
+
+  if(currentEvent == SPECIAL_HIT) {
+    digitalWrite(P_LED, HIGH); // Turn on special LED when special hit is triggered
+  }
 
 }
 
