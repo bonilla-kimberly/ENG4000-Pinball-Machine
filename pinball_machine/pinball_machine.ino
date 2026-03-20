@@ -68,6 +68,8 @@ const unsigned long HIT_COOLDOWN_MS = 500;
 unsigned long lastHitTime = 0;
 
 bool specialMode = false;
+const unsigned long SPECIAL_MODE_DURATION_MS = 5000; // 10 seconds
+unsigned long specialModeStartTime = 0;
 
 int previousPathState = RELEASED;
 int previousTopState = RELEASED;
@@ -101,7 +103,7 @@ void setup() {
 
   const int NUM_RELAYS[] = {L_flipper, R_flipper, target_bump, RED_bump, YELLOW_bump, ball_release};
 
-  const int NUM_LEDS[] = {TW_LED, RED_LED, YELLOW_LED, P_LED, BALL_RELEASE_LED, Y_LED1, Y_LED2, Y_LED3, Y_LED4, Y_LED5, R_LED1, R_LED2, R_LED3, R_LED4, R_LED5};
+  const int NUM_LEDS[] = {TW_LED, PATH_LED, TARGET_LED, P_LED, BALL_RELEASE_LED, Y_LED1, Y_LED2, Y_LED3, Y_LED4, Y_LED5, R_LED1, R_LED2, R_LED3, R_LED4, R_LED5};
 
   for(int i = 0; i < sizeof(NUM_SWITCHES) / sizeof(NUM_SWITCHES[0]); i++){
       pinMode(NUM_SWITCHES[i], INPUT_PULLUP);
@@ -117,14 +119,14 @@ void setup() {
 
   for(int i = 0; i < sizeof(NUM_LEDS) / sizeof(NUM_LEDS[0]); i++){
     pinMode(NUM_LEDS[i], OUTPUT);
-    digitalWrite(NUM_LEDS[i], LOW); // turn off all LEDs at start
+    digitalWrite(NUM_LEDS[i], RELAY_OFF); // turn off all LEDs at start
   }
 
-  pinMode(PATH_LED, OUTPUT);
-  digitalWrite(PATH_LED, HIGH); // turn on path LED at start
+  pinMode(RED_LED, OUTPUT);
+  digitalWrite(RED_LED, RELAY_ON); // turn on red LED at start
 
-  pinMode(TARGET_LED, OUTPUT);
-  digitalWrite(TARGET_LED, HIGH); // turn off target LED at start
+  pinMode(YELLOW_LED, OUTPUT);
+  digitalWrite(YELLOW_LED, RELAY_ON); // turn on yellow LED at start
 }
 
 // ================================
@@ -227,14 +229,14 @@ bool pathLedBlinking = false;
 unsigned long targetLedStartTime = 0;
 bool targetLedBlinking = false;
 
-unsigned long topGroupMillis = 0;
-bool topGroupHit = false;
+unsigned long topGroupStartTime = 0;
+bool topGroupBlinking = false;
 
-unsigned long redGroupMillis = 0;
-bool redGroupAdd = false;
+unsigned long redGroupStartTime = 0;
+bool redGroupBlinking = false;
 
-unsigned long yellowGroupMillis = 0;
-bool yellowGroupAdd = false;
+unsigned long yellowGroupStartTime = 0;
+bool yellowGroupBlinking = false;
 
 // ================================
 // Handle Events for switches (points)
@@ -249,8 +251,8 @@ void handleEvent() {
         addPoints(5);
       }
       
-      //pathLedStartTime = millis(); // Start timer for path LED
-      //pathLedBlinking = true; // Start blinking the path LED
+      pathLedStartTime = millis(); // Start timer for path LED
+      pathLedBlinking = true; // Start blinking the path LED
       break;
 
     case TOP_GROUP_HIT:
@@ -259,6 +261,9 @@ void handleEvent() {
       }else{
         addPoints(5);
       }
+
+      topGroupStartTime = millis(); // Start timer for top group LED
+      topGroupBlinking = true;
       break;
 
     case BOTTOM_TARGET_HIT:
@@ -268,8 +273,8 @@ void handleEvent() {
         addPoints(5);
       }
       
-      //targetLedStartTime = millis(); // Start timer for target LED
-      //targetLedBlinking = true; // Start blinking the target LED
+      targetLedStartTime = millis(); // Start timer for target LED
+      targetLedBlinking = true; // Start blinking the target LED
       break;
 
     case RED_GROUP_HIT:
@@ -286,6 +291,8 @@ void handleEvent() {
       } else {
          addPoints(10);
       }
+      redGroupStartTime = millis(); // Start timer for red group LED
+      redGroupBlinking = true; // Start blinking the red group LED
       break;
 
     case YELLOW_GROUP_HIT:
@@ -302,13 +309,17 @@ void handleEvent() {
       } else {
          addPoints(10);
       }
+      yellowGroupStartTime = millis(); // Start timer for yellow group LED
+      yellowGroupBlinking = true; // Start blinking the yellow group LED
       break;
 
     case SPECIAL_HIT:
-      if (digitalRead(R_LED5) == RELAY_OFF || digitalRead(Y_LED5) == RELAY_OFF) { // Only add points if the special LED is off
-        addPoints(5);
+      if (digitalRead(R_LED5) == RELAY_ON && digitalRead(Y_LED5) == RELAY_ON && specialModeStartTime == 0) { // Special mode if both last red and yellow LEDs are on
+        addPoints(10);
+        specialMode = true;
+        specialModeStartTime = millis(); // Start timer for special mode
       } else {
-      addPoints(10);
+      addPoints(5);
       }
       break;
 
@@ -360,33 +371,70 @@ void resetPoints(){
 // ================================
 // LEDs Logic 
 // ================================
+
+const int redLeds[] = {R_LED1, R_LED2, R_LED3, R_LED4, R_LED5};
+int redLedIndex = 0;
+const int yellowLeds[] = {Y_LED1, Y_LED2, Y_LED3, Y_LED4, Y_LED5};
+int yellowLedIndex = 0;
+
 void updateLEDs() {
-  if(currentEvent == PATH_HIT) {
-    digitalWrite(PATH_LED, HIGH); // Turn on path LED when path is hit
+  if(specialMode){
+    if(millis() - specialModeStartTime < SPECIAL_MODE_DURATION_MS) {
+      digitalWrite(P_LED, RELAY_ON); // Keep the special LED on during special mode
+      digitalWrite(TW_LED, RELAY_ON); // Turn off TW LED during special mode
+      digitalWrite(PATH_LED, RELAY_ON); // Turn off red LED during special mode
+      digitalWrite(TARGET_LED, RELAY_ON); // Turn off target LED during special mode
+    } else {
+      digitalWrite(P_LED, RELAY_OFF); // Turn off the special LED after special mode ends
+      digitalWrite(TW_LED, RELAY_OFF); // Turn TW LED back on after special mode ends
+      digitalWrite(PATH_LED, RELAY_OFF); // Turn red LED back on after special mode ends
+      digitalWrite(TARGET_LED, RELAY_OFF); // Turn target LED back on after special mode ends
+      specialMode = false;
+      specialModeStartTime = 0;
+    }
   }
 
-  if(currentEvent == TOP_GROUP_HIT) {
-    digitalWrite(TW_LED, HIGH); // Turn on TW LED when top group is hit
+  if(specialMode) {
+    if(pathLedBlinking) {
+      blinkLed(PATH_LED, pathLedStartTime, 1000, pathLedBlinking); // Blink for the duration of special mode
+    }
+    if(topGroupBlinking) {
+      blinkLed(TW_LED, topGroupStartTime, 1000, topGroupBlinking); // Blink for the duration of special mode
+    }
+    if(targetLedBlinking) {
+      blinkLed(TARGET_LED, targetLedStartTime, 1000, targetLedBlinking); // Blink for the duration of special mode
+    }
   }
 
-  if(currentEvent == BOTTOM_TARGET_HIT) {
-    digitalWrite(TARGET_LED, LOW); // Turn on target LED when bottom target is hit
+  if(redGroupBlinking) {
+    blinkLed(RED_LED, redGroupStartTime, 3000, redGroupBlinking); // Blink for 3 seconds
   }
 
-  if(currentEvent == RED_GROUP_HIT) {
-    digitalWrite(RED_LED, HIGH); // Turn on red LED when red group is hit
+  if(yellowGroupBlinking) {
+    blinkLed(YELLOW_LED, yellowGroupStartTime, 3000, yellowGroupBlinking); // Blink for 3 seconds
   }
 
-  if(currentEvent == YELLOW_GROUP_HIT) {
-    digitalWrite(YELLOW_LED, HIGH); // Turn on yellow LED when yellow group is hit
-  }
-
-  if(currentEvent == SPECIAL_HIT) {
-    digitalWrite(P_LED, HIGH); // Turn on special LED when special hit is triggered
+  switch(currentEvent){
+    case RED_GROUP_HIT:
+      digitalWrite(redLeds[redLedIndex], RELAY_ON); // Turn off red LEDs based on red group hit
+      redLedIndex = (redLedIndex + 1) % (sizeof(redLeds)/sizeof(redLeds[0])); // Move to the next red LED index
+      break;
+    case YELLOW_GROUP_HIT:
+      digitalWrite(yellowLeds[yellowLedIndex], RELAY_ON); // Turn off yellow LEDs based on yellow group hit
+      yellowLedIndex = (yellowLedIndex + 1) % (sizeof(yellowLeds)/sizeof(yellowLeds[0])); // Move to the next yellow LED index
+      break;
   }
 
 }
 
+bool blinkLed(int ledPin, long startTime, int duration, bool &blinking) {
+  if (millis() - startTime < duration) {
+    digitalWrite(ledPin, millis()%500>200 ? LOW : HIGH);
+  } else{
+    digitalWrite(ledPin, RELAY_ON);
+    return blinking = false;
+  }
+}
 
 
 // -------- Main Loop to read inputs --------
