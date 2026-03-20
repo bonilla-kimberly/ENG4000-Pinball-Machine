@@ -20,18 +20,20 @@ const int path = 6; //BR, BL, ML, MR, TL, TR path, W_bumpers
 const int target_sw = 7; //BL, BR target switch
 const int target_bump = 8; //BL,BR target bump
 
+const int special_sw = 9;
+
 //Group 7 + 8 (right and left flippers) - Switches and solenoid 
-const int L_flipper_sw = 9;
-const int R_flipper_sw = 10;
-const int L_flipper = 11;
-const int R_flipper = 12;
+const int L_flipper_sw = 10;
+const int R_flipper_sw = 11;
+const int L_flipper = 12;
+const int R_flipper = 13;
 
 //Group 9 (Ball release) - Switches and bumpers 
-const int ball_release_sw = 13;
-const int ball_release = 14;
+const int ball_release_sw = 14;
+const int ball_release = 15;
 
 //Group 10 (ON/OFF) - Only switches
-const int ON_OFF_sw = 15;
+const int ON_OFF_sw = 16;
 
 // -------- Switch logic --------
 const int PRESSED = LOW;
@@ -42,23 +44,23 @@ const int RELAY_ON = LOW;
 const int RELAY_OFF = HIGH;
 
 // ---- LED Pin Definitions (single LEDs) ----
-const int TARGET_LED  = 16; //on BL, BR, GR, GL LED 
-const int TW_LED    = 17; //off TW1,2,3,4,Y,R LED
-const int RED_LED = 18;  //off TR, ML LED
-const int YELLOW_LED = 19; //off TL, MR LED
-const int P_LED = 20; //off Special
-const int PATH_LED = 21; //on BR, BL, ML, MR, TL, TR path LED
-const int BALL_RELEASE_LED = 35; //off ball release LED
-const int Y_LED1 = 36; //off 
-const int Y_LED2 = 37;
-const int Y_LED3 = 38;
-const int Y_LED4 = 39;
-const int Y_LED5 = 40;
-const int R_LED1 = 41; //off
-const int R_LED2 = 42;
-const int R_LED3 = 43;
-const int R_LED4 = 44;
-const int R_LED5 = 45;
+const int TARGET_LED  = 17; //on BL, BR, GR, GL LED 
+const int TW_LED    = 18; //off TW1,2,3,4,Y,R LED
+const int RED_LED = 19;  //off TR, ML LED
+const int YELLOW_LED = 20; //off TL, MR LED
+const int P_LED = 21; //off Special
+const int PATH_LED = 22; //on BR, BL, ML, MR, TL, TR path LED
+const int BALL_RELEASE_LED = 36; //off ball release LED
+const int Y_LED1 = 37; //off 
+const int Y_LED2 = 38;
+const int Y_LED3 = 39;
+const int Y_LED4 = 40;
+const int Y_LED5 = 41;
+const int R_LED1 = 42; //off
+const int R_LED2 = 43;
+const int R_LED3 = 44;
+const int R_LED4 = 45;
+const int R_LED5 = 46;
 
 // -------- Score logic --------
 int score = 0; // initial set to 0
@@ -82,6 +84,7 @@ enum Event {
   BOTTOM_TARGET_HIT,
   RED_GROUP_HIT,
   YELLOW_GROUP_HIT,
+  SPECIAL_HIT,
   ON_OFF_HIT
 };
 
@@ -259,28 +262,71 @@ void handleEvent() {
   switch (currentEvent) {
 
     case PATH_HIT:
-      addPoints(50);
+      if(digitalRead(P_LED) == RELAY_OFF) { // Only add 5 points if the last red or yellow LED is off
+        addPoints(5);
+      }else{
+        addPoints(50);
+      }
       
       //pathLedStartTime = millis(); // Start timer for path LED
       // pathLedBlinking = true; // Start blinking the path LED
       break;
 
     case TOP_GROUP_HIT:
-      addPoints(5);
+      if(digitalRead(P_LED) == RELAY_OFF) { // Only add points if the special LED is off
+        addPoints(5);
+      }else{
+        addPoints(50);
+      }
       break;
 
     case BOTTOM_TARGET_HIT:
-      addPoints(10);
+      if(digitalRead(P_LED) == RELAY_OFF){
+        addPoints(5);
+      } else{
+        addPoints(10);
+      }
       
       //targetLedStartTime = millis(); // Start timer for target LED
       targetLedBlinking = true; // Start blinking the target LED
       break;
 
     case RED_GROUP_HIT:
-      addPoints(10);
+      if(digitalRead(Y_LED5) == RELAY_ON && digitalRead(R_LED5) == RELAY_ON) { // Only add points if the last red or yellow LED is off
+        addPoints(500);
+      } else if(digitalRead(Y_LED4) == RELAY_ON && digitalRead(R_LED4) == RELAY_ON) { // If both are off, add 10 points
+         addPoints(300);
+      } else if(digitalRead(Y_LED3) == RELAY_ON && digitalRead(R_LED3) == RELAY_ON) {
+         addPoints(200);
+      } else if(digitalRead(Y_LED2) == RELAY_ON && digitalRead(R_LED2) == RELAY_ON) {
+         addPoints(100);
+      } else if(digitalRead(Y_LED1) == RELAY_ON && digitalRead(R_LED1) == RELAY_ON) {
+         addPoints(50);
+      } else {
+         addPoints(10);
+      }
       break;
 
     case YELLOW_GROUP_HIT:
+      if(digitalRead(Y_LED5) == RELAY_ON && digitalRead(R_LED5) == RELAY_ON) { // Only add points if the last red or yellow LED is off
+        addPoints(500);
+      } else if(digitalRead(Y_LED4) == RELAY_ON && digitalRead(R_LED4) == RELAY_ON) { // If both are off, add 10 points
+         addPoints(300);
+      } else if(digitalRead(Y_LED3) == RELAY_ON && digitalRead(R_LED3) == RELAY_ON) {
+         addPoints(200);
+      } else if(digitalRead(Y_LED2) == RELAY_ON && digitalRead(R_LED2) == RELAY_ON) {
+         addPoints(100);
+      } else if(digitalRead(Y_LED1) == RELAY_ON && digitalRead(R_LED1) == RELAY_ON) {
+         addPoints(50);
+      } else {
+         addPoints(10);
+      }
+      break;
+
+    case SPECIAL_HIT:
+      if (digitalRead(R_LED5) == RELAY_OFF || digitalRead(Y_LED5) == RELAY_OFF) { // Only add points if the special LED is off
+        addPoints(5);
+      } else {
       addPoints(10);
       break;
 
