@@ -330,6 +330,7 @@ void handleEvent() {
         addPoints(5);
       } else {
       addPoints(10);
+      }
       break;
 
     case ON_OFF_HIT:
