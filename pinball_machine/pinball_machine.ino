@@ -246,13 +246,18 @@ if(digitalRead(RED_sw_bumper) == PRESSED){
 }
 
 void handleBallRelease() {
-  if(digitalRead(ball_release_sw) == PRESSED && !gameOver){
+  //detect one press not button hold. delay it for a bit to avoid balls being continously relased
+  static int prev = RELEASED;
+  int curr = digitalRead(ball_release_sw);
+  //one button press (will ignore hold)
+  if(prev == RELEASED && curr == PRESSED && !gameOver){
     digitalWrite(ball_release, RELAY_ON);
-  } else {
-     digitalWrite(ball_release, RELAY_OFF);
+    delay(50); //pulse to avoid reading a hold 
+    digitalWrite(ball_release, RELAY_OFF);
+  } 
+    prev = curr;
   }
 
-}
 unsigned long pathLedStartTime = 0;
 bool pathLedBlinking = false;
 
@@ -300,6 +305,9 @@ void handleEvent() {
 
     case ON_OFF_HIT:
       resetPoints();
+      ballcount = 0;
+      gameOver = false;
+      Serial.println("New Game Started");
       break;
 
     case BALL_RELEASE_HIT:
@@ -337,7 +345,6 @@ void releaseBall(){
 
     if(ballcount >= MAX_BALLS){
       gameOver = true; 
-      ballcount = 0;
       Serial.print("Game Over");
       }
     }
@@ -399,13 +406,13 @@ void updateLEDs() {
 // -------- Main Loop to read inputs --------
 void loop() {
 
+    readInputsPoints();
     handleFLippers();
     handleBottomTargets();
     handleMiddleRedYellow();
     handleBallRelease();
     handleEvent();
     updateLEDs();
-    readInputsPoints();
     delay(1);
 
     //Serial.println(digitalRead(path)); //use for debugging to check wiring (111 = correct, 101 = wiring not done correctly)
