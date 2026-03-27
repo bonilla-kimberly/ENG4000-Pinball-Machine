@@ -2,68 +2,38 @@
 #include <MD_MAX72xx.h>
 #include <SPI.h>
 
-
-//Hardware definition
+// ---- CONFIG ----
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
-#define MAX_DEVICES 4
+#define MAX_DEVICES 4   // change depending on how many modules you have
 
+#define DATA_PIN 47   // DIN
+#define CLK_PIN  44   // CLK
+#define CS_PIN   43   // CS / LOAD
 
-//SPI Connection
-#define DATA_PIN 35 //DIN
-#define CLK_PIN  36 //CLK
-#define CS_PIN   37 //CS
-
-
-MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
-
-
-char text1[] = "Hello";
-char text2[] = "World";
-bool isFirstText = true;
-
+// ---- OBJECT ----
+MD_Parola matrix = MD_Parola(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES);
 
 void setup() {
- myDisplay.begin();
- displayText(text1);
+  matrix.begin();
+  matrix.setIntensity(5);   // brightness (0–15)
+  matrix.displayClear();
 
-
+  matrix.displayText(
+    "HELLO WORLD!",   // text
+    PA_CENTER,        // alignment
+    50,               // speed (lower = faster)
+    1000,             // pause at end (ms)
+    PA_SCROLL_LEFT,   // entry effect
+    PA_SCROLL_LEFT    // exit effect
+  );
 }
-
 
 void loop() {
- // loop through text1 and text2
- if(myDisplay.displayAnimate()){
-   myDisplay.displayReset();
-
-
-   if(isFirstText){
-     clearDisplay;
-     delay(1000);
-     displayText(text2);
-     isFirstText = false;
-   } else {
-     clearDisplay;
-     delay(1000);
-     displayText(text1);
-     isFirstText = true;
-   }
- }
-
-
+  // this must be called continuously
+  if (matrix.displayAnimate()) {
+    matrix.displayReset();  // repeat animation
+  }
 }
-void displayText(char * text){
- myDisplay.displayText(text, PA_LEFT, 200, 0, PA_SCROLL_LEFT);
-}
-
-
-void clearDisplay() {
- myDisplay.displayClear();
-}
-
-
-
-
-
 
 
 
