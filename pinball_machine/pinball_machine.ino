@@ -2,65 +2,66 @@
 // Main Pinball Machine Class Controller
 // ================================
 
-// -------- Pin Definitions --------
+#include <MD_Parola.h>
+#include <MD_MAX72xx.h>
+#include <SPI.h>
 
-//Group 1 (top section) 5 points - Only switches 
-const int TW_switch = 1; //TW1,2,3,4,Y,R switch
+// ---- CONFIG ----
+#define HARDWARE_TYPE MD_MAX72XX::FC16_HW
+#define MAX_DEVICES 4 
 
-//Group 2 + 3 (Yellow and Red Middle traffic light) 10 points for now - Switches and bumpers 
-const int RED_sw_bumper = 2; //TR, ML
-const int RED_bump = 3;
-const int YELLOW_sw_bumper = 4; //TL, MR
-const int YELLOW_bump = 5;
+// -------- MATRIX (already decided) --------
+#define MATRIX_DIN 47
+#define MATRIX_CLK 44
+#define MATRIX_CS  43
 
-//Group 4 + 5 (paths) 50 points - Only switches
-const int path = 6; //BR, BL, ML, MR, TL, TR path, W_bumpers
+// -------- INPUTS / IMPORTANT CONTROL --------
+const int TW_switch         = 1;
+const int RED_sw_bumper     = 2;
+const int RED_bump          = 4;
+const int YELLOW_sw_bumper  = 5;
+const int YELLOW_bump       = 6;
+const int path              = 7;
+const int target_sw         = 8;
+const int target_bump       = 9;
+const int special_sw        = 10;
 
-//Group 6 (bottom target) 10 points - Switches and bumpers 
-const int target_sw = 7; //BL, BR target switch
-const int target_bump = 8; //BL,BR target bump
+const int L_flipper_sw      = 11;
+const int R_flipper_sw      = 12;
 
-const int special_sw = 9;
+const int ball_release_sw   = 13;
+const int ON_OFF_sw         = 14;
 
-//Group 7 + 8 (right and left flippers) - Switches and solenoid 
-const int L_flipper_sw = 10;
-const int R_flipper_sw = 11;
-const int L_flipper = 12;
-const int R_flipper = 13;
+// -------- CRITICAL OUTPUTS (solenoids / relays) --------
+const int L_flipper         = 15;
+const int R_flipper         = 16;
+const int ball_release      = 17;
 
-//Group 9 (Ball release) - Switches and bumpers 
-const int ball_release_sw = 14;
-const int ball_release = 15;
+// -------- SAFE LED OUTPUTS --------
+const int TARGET_LED        = 18;
+const int TW_LED            = 21;
 
-//Group 10 (ON/OFF) - Only switches
-const int ON_OFF_sw = 16;
+const int RED_LED           = 35;
+const int YELLOW_LED        = 36;
+const int P_LED             = 37;
+const int PATH_LED          = 38;
+const int BALL_RELEASE_LED  = 39;
 
-// -------- Switch logic --------
-const int PRESSED = LOW;
-const int RELEASED = HIGH;
+// -------- REMAINING LEDS --------
+const int Y_LED1            = 40;
+const int Y_LED2            = 41;
+const int Y_LED3            = 42;
 
-// -------- Relay logic --------
-const int RELAY_ON = LOW;
-const int RELAY_OFF = HIGH;
+const int Y_LED4            = 45;  // output only (strap pin)
+const int Y_LED5            = 46;  // output only (strap pin)
 
-// ---- LED Pin Definitions (single LEDs) ----
-const int TARGET_LED  = 17; //on BL, BR, GR, GL LED 
-const int TW_LED    = 18; //off TW1,2,3,4,Y,R LED
-const int RED_LED = 19;  //off TR, ML LED
-const int YELLOW_LED = 20; //off TL, MR LED
-const int P_LED = 21; //off Special
-const int PATH_LED = 22; //on BR, BL, ML, MR, TL, TR path LED
-const int BALL_RELEASE_LED = 36; //off ball release LED
-const int Y_LED1 = 37; //off 
-const int Y_LED2 = 38;
-const int Y_LED3 = 39;
-const int Y_LED4 = 40;
-const int Y_LED5 = 41;
-const int R_LED1 = 42; //off
-const int R_LED2 = 43;
-const int R_LED3 = 44;
-const int R_LED4 = 45;
-const int R_LED5 = 46;
+const int R_LED1            = 48;
+
+// -------- LAST RESORT (optional use) --------
+const int R_LED2            = 3;   // input/boot-sensitive
+
+// ---- OBJECT ----
+MD_Parola matrix = MD_Parola(HARDWARE_TYPE, MATRIX_DIN, MATRIX_CLK, MATRIX_CS, MAX_DEVICES);
 
 // -------- Score logic --------
 int score = 0; // initial set to 0
@@ -104,6 +105,10 @@ Event currentEvent = NO_EVENT;
 // -------- Setup ------------
 void setup() {
   Serial.begin(115200);
+  matrix.begin();
+  matrix.setIntensity(5); // Set brightness (0-15)
+  matrix.displayClear();
+  matrix.showScore(0);
   const int NUM_SWITCHES[] = {path, L_flipper_sw, R_flipper_sw, TW_switch, target_sw, RED_sw_bumper, YELLOW_sw_bumper, ball_release_sw, ON_OFF_sw};
 
   const int NUM_ACTUATORS[] = {L_flipper, R_flipper, target_bump, RED_bump, YELLOW_bump, ball_release};
@@ -134,6 +139,21 @@ void setup() {
 
   pinMode(YELLOW_LED, OUTPUT);
   digitalWrite(YELLOW_LED, RELAY_ON); // turn on yellow LED at start
+}
+
+//===============================
+// Display Logic
+//===============================
+void showText(const char* text) {
+  matrix.displayClear();
+  matrix.setTextAlignment(PA_CENTER);
+  matrix.print(text);
+}
+
+void showScore(int score) {
+  matrix.displayClear();
+  matrix.setTextAlignment(PA_CENTER);
+  matrix.print(score);
 }
 
 // ================================
@@ -389,6 +409,7 @@ void addPoints(int points){
   Serial.print(points);
   Serial.print(" => ");
   Serial.println(score);
+  showScore(score);
 }
 
 void resetPoints(){
