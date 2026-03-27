@@ -59,6 +59,17 @@ const int R_LED1            = 48;
 
 // -------- LAST RESORT (optional use) --------
 const int R_LED2            = 3;   // input/boot-sensitive
+const int R_LED3            = 19;   // input/boot-sensitive
+const int R_LED4            = 20;   // input/boot-sensitive
+const int R_LED5            = 0;   // input/boot-sensitive
+
+// -------- Switch logic --------
+const int PRESSED = LOW;
+const int RELEASED = HIGH;
+
+// -------- Relay logic --------
+const int RELAY_ON = LOW;
+const int RELAY_OFF = HIGH;
 
 // ---- OBJECT ----
 MD_Parola matrix = MD_Parola(HARDWARE_TYPE, MATRIX_DIN, MATRIX_CLK, MATRIX_CS, MAX_DEVICES);
@@ -108,7 +119,7 @@ void setup() {
   matrix.begin();
   matrix.setIntensity(5); // Set brightness (0-15)
   matrix.displayClear();
-  matrix.showScore(0);
+  showScore(0);
   const int NUM_SWITCHES[] = {path, L_flipper_sw, R_flipper_sw, TW_switch, target_sw, RED_sw_bumper, YELLOW_sw_bumper, ball_release_sw, ON_OFF_sw};
 
   const int NUM_ACTUATORS[] = {L_flipper, R_flipper, target_bump, RED_bump, YELLOW_bump, ball_release};
