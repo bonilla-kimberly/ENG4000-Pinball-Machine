@@ -71,12 +71,18 @@ bool specialMode = false;
 const unsigned long SPECIAL_MODE_DURATION_MS = 5000; // 10 seconds
 unsigned long specialModeStartTime = 0;
 
+// -------- Ball Release logic --------
+const int MAX_BALLS = 5;
+bool gameOver = false;
+int ballcount = 0; 
+
 int previousPathState = RELEASED;
 int previousTopState = RELEASED;
 int previousTargetState = RELEASED;
 int previousRedState = RELEASED;
 int previousYellowState = RELEASED;
 int previousOnOffState = RELEASED;
+int previousBallRelease = RELEASED;
 
 // ================================
 // Switch Table (Different Events)
@@ -89,7 +95,8 @@ enum Event {
   RED_GROUP_HIT,
   YELLOW_GROUP_HIT,
   SPECIAL_HIT,
-  ON_OFF_HIT
+  ON_OFF_HIT,
+  BALL_RELEASE_HIT,
 };
 
 Event currentEvent = NO_EVENT;
@@ -141,6 +148,28 @@ void readInputsPoints(){
   int redState = digitalRead(RED_sw_bumper);
   int yellowState = digitalRead(YELLOW_sw_bumper);
   int onOffState = digitalRead(ON_OFF_sw);
+  int ballReleaseState = digitalRead(ball_release_sw);
+
+  // if(pathState != previousPathState) {
+  //   lastHitTime = millis();
+  //   currentEvent = PATH_HIT;
+  // } if(topState != previousTopState) {
+  //   lastHitTime = millis();
+  //   currentEvent = TOP_GROUP_HIT;
+  // } if(targetState != previousTargetState) {
+  //   lastHitTime = millis();
+  //   currentEvent = BOTTOM_TARGET_HIT;
+  // } if(redState != previousRedState) {
+  //   lastHitTime = millis();
+  //   currentEvent = RED_GROUP_HIT;
+  // } if(yellowState != previousYellowState) {
+  //   lastHitTime = millis();
+  //   currentEvent = YELLOW_GROUP_HIT;
+  // } if(onOffState != previousOnOffState) {
+  //   lastHitTime = millis();
+  //   currentEvent = ON_OFF_HIT;
+  // } 
+
 
   unsigned long now = millis();
   bool cooldownActive = (now - lastHitTime) > HIT_COOLDOWN_MS;
@@ -164,6 +193,10 @@ void readInputsPoints(){
     } else if (onOffState == PRESSED && previousOnOffState == RELEASED) {
       currentEvent = ON_OFF_HIT;
       lastHitTime = now;
+    } else if (ballReleaseState == PRESSED && previousBallRelease == RELEASED){
+      currentEvent = BALL_RELEASE_HIT;
+      lastHitTime = now;
+
     }
   }
 
@@ -173,7 +206,10 @@ void readInputsPoints(){
   previousRedState = redState;
   previousYellowState = yellowState;
   previousOnOffState = onOffState;
+  previousBallRelease = ballReleaseState;
 }
+
+
 
 // ================================
 // Read Input switches to activate relay (continous control)
@@ -216,13 +252,18 @@ if(digitalRead(RED_sw_bumper) == PRESSED){
 }
 
 void handleBallRelease() {
-  if(digitalRead(ball_release_sw) == PRESSED){
+  //detect one press not button hold. delay it for a bit to avoid balls being continously relased
+  static int prev = RELEASED;
+  int curr = digitalRead(ball_release_sw);
+  //one button press (will ignore hold)
+  if(prev == RELEASED && curr == PRESSED && !gameOver){
     digitalWrite(ball_release, RELAY_ON);
-  } else {
-     digitalWrite(ball_release, RELAY_OFF);
+    delay(50); //pulse to avoid reading a hold 
+    digitalWrite(ball_release, RELAY_OFF);
+  } 
+    prev = curr;
   }
 
-}
 unsigned long pathLedStartTime = 0;
 bool pathLedBlinking = false;
 
@@ -325,6 +366,13 @@ void handleEvent() {
 
     case ON_OFF_HIT:
       resetPoints();
+      ballcount = 0;
+      gameOver = false;
+      Serial.println("New Game Started");
+      break;
+
+    case BALL_RELEASE_HIT:
+      releaseBall();
       break;
       
     case NO_EVENT:
@@ -437,16 +485,82 @@ bool blinkLed(int ledPin, long startTime, int duration, bool &blinking) {
 }
 
 
+void releaseBall(){
+    if(!gameOver){
+      ballcount++;
+      Serial.print("BallCOunt: ");
+       Serial.println(ballcount);
+
+    if(ballcount >= MAX_BALLS){
+      gameOver = true; 
+      Serial.print("Game Over");
+      }
+    }
+}
+
+
+// ================================
+// LEDs Logic 
+// ================================
+void updateLEDs() {
+  // Blinking LEDs
+  if (pathLedBlinking) {
+    if(millis() - pathLedStartTime < 3000) { // Blink for 3 seconds
+      digitalWrite(PATH_LED, millis()%500>200 ? LOW: HIGH); // Blink every 250ms
+    } else {
+      digitalWrite(PATH_LED, HIGH); // Keep the path LED on
+      pathLedBlinking = false;
+    }
+  }
+
+  if (targetLedBlinking) {
+    if(millis() - targetLedStartTime < 3000) { // Blink for 3 seconds
+      digitalWrite(TARGET_LED, millis()%500>200 ? LOW: HIGH); // Blink every 250ms
+    } else {
+      digitalWrite(TARGET_LED, HIGH); // Keep the target LED on
+      targetLedBlinking = false;
+    }
+  }
+
+  // Turn on LEDs based on EVENT
+  if (currentEvent == TOP_GROUP_HIT) {
+    digitalWrite(TW_LED, HIGH);
+    topGroupMillis = millis(); // Start timer for top group LED
+  }
+  if (currentEvent == RED_GROUP_HIT) {
+    digitalWrite(RED_LED, HIGH);
+    redGroupMillis = millis(); // Start timer for red group LED
+  }
+  if (currentEvent == YELLOW_GROUP_HIT) {
+    digitalWrite(YELLOW_LED, HIGH);
+    yellowGroupMillis = millis(); // Start timer for yellow group LED
+  }
+
+  // Turn off LEDs
+  if (millis() - topGroupMillis > 5000) { // Keep the top group LED on for 3 seconds
+    digitalWrite(TW_LED, LOW);
+  }
+  if (millis() - redGroupMillis > 5000) { // Keep the red group LED on for 3 seconds
+    digitalWrite(RED_LED, LOW);
+  }
+  if (millis() - yellowGroupMillis > 5000) { // Keep the yellow group LED on for 3 seconds
+    digitalWrite(YELLOW_LED, LOW);
+  }
+
+}
+
+
+
 // -------- Main Loop to read inputs --------
 void loop() {
 
+    readInputsPoints();
     handleFLippers();
     handleBottomTargets();
     handleMiddleRedYellow();
     handleBallRelease();
     handleEvent();
     updateLEDs();
-    readInputsPoints();
     delay(1);
 
     //Serial.println(digitalRead(path)); //use for debugging to check wiring (111 = correct, 101 = wiring not done correctly)
