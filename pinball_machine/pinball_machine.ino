@@ -9,9 +9,9 @@
 
 
 //SPI Connection
-#define DATA_PIN 13 //DIN
-#define CLK_PIN  11 //CLK
-#define CS_PIN   10 //CS
+#define DATA_PIN 35 //DIN
+#define CLK_PIN  36 //CLK
+#define CS_PIN   37 //CS
 
 
 MD_Parola myDisplay = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
