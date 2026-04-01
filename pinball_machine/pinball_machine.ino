@@ -222,11 +222,12 @@ void readInputsPoints(){
   previousBallRelease = ballReleaseState;
   if(now - lastHitTime > 10000 && !gameOver) { // reset event if no hits for 10 seconds
     if(now - inactivityWarningTime > 1000) { // show warning after 5 seconds of inactivity
-      showText("Game Over in " + char(warningCounter));
+      showText("Game Over in" + (char) warningCounter);
+      //matrix.print(warningCounter);
       inactivityWarningTime = now;
       warningCounter--;
       if(warningCounter < 0) {
-        currentEvent = ON_OFF_HIT; // trigger game over event
+        currentEvent = NO_EVENT; // trigger game over event
         gameover();
       }
     }
