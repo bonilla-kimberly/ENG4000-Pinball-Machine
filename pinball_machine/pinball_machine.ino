@@ -220,9 +220,9 @@ void readInputsPoints(){
   previousYellowState = yellowState;
   previousOnOffState = onOffState;
   previousBallRelease = ballReleaseState;
-  if(now - lastHitTime > 10000) { // reset event if no hits for 10 seconds
+  if(now - lastHitTime > 10000 && !gameOver) { // reset event if no hits for 10 seconds
     if(now - inactivityWarningTime > 1000) { // show warning after 5 seconds of inactivity
-      showText("Game Over in " + warningCounter);
+      showText("Game Over in " + char(warningCounter));
       inactivityWarningTime = now;
       warningCounter--;
       if(warningCounter < 0) {
@@ -510,8 +510,8 @@ bool blinkLed(int ledPin, long startTime, int duration, bool &blinking) {
 void releaseBall(){
     if(!gameOver){
       ballcount++;
-      showText("Ball " + ballcount);
-      Serial.print("BallCOunt: ");
+      showText("Ball " + char(ballcount));
+      Serial.print("BallCount: ");
        Serial.println(ballcount);
 
     if(ballcount >= MAX_BALLS){
