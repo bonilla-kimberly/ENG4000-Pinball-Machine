@@ -78,9 +78,11 @@ MD_Parola matrix = MD_Parola(HARDWARE_TYPE, MATRIX_DIN, MATRIX_CLK, MATRIX_CS, M
 int score = 0; // initial set to 0
 const unsigned long HIT_COOLDOWN_MS = 500;
 unsigned long lastHitTime = 0;
+unsigned long inactivityWarningTime = 0;
+int warningCounter = 5;
 
 bool specialMode = false;
-const unsigned long SPECIAL_MODE_DURATION_MS = 5000; // 10 seconds
+const unsigned long SPECIAL_MODE_DURATION_MS = 5000; // 5 seconds
 unsigned long specialModeStartTime = 0;
 
 // -------- Ball Release logic --------
@@ -120,6 +122,7 @@ void setup() {
   matrix.setIntensity(5); // Set brightness (0-15)
   matrix.displayClear();
   showScore(0);
+  //gameover();
   const int NUM_SWITCHES[] = {path, L_flipper_sw, R_flipper_sw, TW_switch, target_sw, RED_sw_bumper, YELLOW_sw_bumper, ball_release_sw, ON_OFF_sw};
 
   const int NUM_ACTUATORS[] = {L_flipper, R_flipper, target_bump, RED_bump, YELLOW_bump, ball_release};
@@ -181,27 +184,6 @@ void readInputsPoints(){
   int onOffState = digitalRead(ON_OFF_sw);
   int ballReleaseState = digitalRead(ball_release_sw);
 
-  // if(pathState != previousPathState) {
-  //   lastHitTime = millis();
-  //   currentEvent = PATH_HIT;
-  // } if(topState != previousTopState) {
-  //   lastHitTime = millis();
-  //   currentEvent = TOP_GROUP_HIT;
-  // } if(targetState != previousTargetState) {
-  //   lastHitTime = millis();
-  //   currentEvent = BOTTOM_TARGET_HIT;
-  // } if(redState != previousRedState) {
-  //   lastHitTime = millis();
-  //   currentEvent = RED_GROUP_HIT;
-  // } if(yellowState != previousYellowState) {
-  //   lastHitTime = millis();
-  //   currentEvent = YELLOW_GROUP_HIT;
-  // } if(onOffState != previousOnOffState) {
-  //   lastHitTime = millis();
-  //   currentEvent = ON_OFF_HIT;
-  // } 
-
-
   unsigned long now = millis();
   bool cooldownActive = (now - lastHitTime) > HIT_COOLDOWN_MS;
 
@@ -238,6 +220,17 @@ void readInputsPoints(){
   previousYellowState = yellowState;
   previousOnOffState = onOffState;
   previousBallRelease = ballReleaseState;
+  if(now - lastHitTime > 10000) { // reset event if no hits for 10 seconds
+    if(now - inactivityWarningTime > 1000) { // show warning after 5 seconds of inactivity
+      showText("Game Over in " + warningCounter);
+      inactivityWarningTime = now;
+      warningCounter--;
+      if(warningCounter < 0) {
+        currentEvent = ON_OFF_HIT; // trigger game over event
+        gameover();
+      }
+    }
+  }
 }
 
 
@@ -246,13 +239,13 @@ void readInputsPoints(){
 // Read Input switches to activate relay (continous control)
 // ================================
 void handleFLippers() {
-if(digitalRead(L_flipper_sw) == PRESSED){
+if(digitalRead(L_flipper_sw) == PRESSED && !gameOver){
     digitalWrite(L_flipper, RELAY_ON);
   } else {
      digitalWrite(L_flipper, RELAY_OFF);
   }
 
-if(digitalRead(R_flipper_sw) == PRESSED){
+if(digitalRead(R_flipper_sw) == PRESSED && !gameOver){
     digitalWrite(R_flipper, RELAY_ON);
   } else {
      digitalWrite(R_flipper, RELAY_OFF);
@@ -396,10 +389,19 @@ void handleEvent() {
       break;
 
     case ON_OFF_HIT:
-      resetPoints();
-      ballcount = 0;
-      gameOver = false;
-      Serial.println("New Game Started");
+      if(ballcount != 0 && !gameOver){ // Only trigger game over if a game is in progress
+        gameover();
+        unsigned long gameOverStartTime = millis();
+        if(millis() - gameOverStartTime > 5000) { 
+          resetPoints();
+          ballcount = 0;
+          gameOver = false;
+        }
+      } else if(ballcount == 0 && gameOver){ // If game is already over and ON/OFF is hit again, reset the game immediately
+          resetPoints();
+          ballcount = 0;
+          gameOver = false;
+      }
       break;
 
     case BALL_RELEASE_HIT:
@@ -427,26 +429,8 @@ void resetPoints(){
   score = 0;
   Serial.print("Score reset => ");
   Serial.println(score);
+  showScore(score);
 }
-
-  // if (pathLedBlinking) {
-  //   if(millis() - pathLedStartTime < 3000) { // Blink for 3 seconds
-  //     digitalWrite(PATH_LED, PATH_LED, millis()%500>200); // Blink every 250ms
-  //   } else {
-  //     digitalWrite(PATH_LED, HIGH); // Keep the path LED on
-  //     pathLedBlinking = false;
-  //   }
-  // }
-
-  // // Turn on LEDs based on EVENT
-  // if (currentEvent == TOP_GROUP_HIT) {
-  //   digitalWrite(TW_LED, HIGH);
-  //   topGroupMillis = millis(); // Start timer for top group LED
-  // }
-  //   // Turn off LEDs
-  // if (millis() - topGroupMillis > 5000) { // Keep the top group LED on for 3 seconds
-  //   digitalWrite(TW_LED, LOW);
-  // }
 
 // ================================
 // LEDs Logic 
@@ -469,6 +453,12 @@ void updateLEDs() {
       digitalWrite(TW_LED, RELAY_OFF); // Turn TW LED back on after special mode ends
       digitalWrite(PATH_LED, RELAY_OFF); // Turn red LED back on after special mode ends
       digitalWrite(TARGET_LED, RELAY_OFF); // Turn target LED back on after special mode ends
+      for(int i = 0; i < sizeof(redLeds)/sizeof(redLeds[0]); i++){
+        digitalWrite(redLeds[i], RELAY_OFF); // Turn off all red LEDs after special mode ends
+      }
+      for(int i = 0; i < sizeof(yellowLeds)/sizeof(yellowLeds[0]); i++){
+        digitalWrite(yellowLeds[i], RELAY_OFF); // Turn off all yellow LEDs after special mode ends
+      }
       specialMode = false;
       specialModeStartTime = 0;
     }
@@ -520,14 +510,23 @@ bool blinkLed(int ledPin, long startTime, int duration, bool &blinking) {
 void releaseBall(){
     if(!gameOver){
       ballcount++;
+      showText("Ball " + ballcount);
       Serial.print("BallCOunt: ");
        Serial.println(ballcount);
 
     if(ballcount >= MAX_BALLS){
-      gameOver = true; 
-      Serial.print("Game Over");
+      gameover();
       }
     }
+}
+
+void gameover(){
+  gameOver = true;
+  warningCounter = 5; // reset warning counter for next game
+  showText("Game Over");
+  Serial.print("Game Over");
+  delay(1000);
+  matrix.displayClear();
 }
 
 
