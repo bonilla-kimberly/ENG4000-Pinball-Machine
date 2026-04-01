@@ -75,7 +75,7 @@ const int RELAY_OFF = HIGH;
 MD_Parola matrix = MD_Parola(HARDWARE_TYPE, MATRIX_DIN, MATRIX_CLK, MATRIX_CS, MAX_DEVICES);
 char matrixTextBuffer[64] = "";
 bool matrixScrollActive = false;
-const uint16_t MATRIX_SCROLL_SPEED = 70;
+const uint16_t MATRIX_SCROLL_SPEED = 35;
 
 // -------- Score logic --------
 int score = 0; // initial set to 0
@@ -99,6 +99,7 @@ int previousTargetState = RELEASED;
 int previousRedState = RELEASED;
 int previousYellowState = RELEASED;
 int previousOnOffState = RELEASED;
+int previousSpecialState = RELEASED;
 int previousBallRelease = RELEASED;
 
 // ================================
@@ -165,7 +166,8 @@ void showText(const char* text) {
   strncpy(matrixTextBuffer, text, sizeof(matrixTextBuffer) - 1);
   matrixTextBuffer[sizeof(matrixTextBuffer) - 1] = '\0';
   matrix.displayClear();
-  matrix.displayScroll(matrixTextBuffer, PA_LEFT, PA_SCROLL_LEFT, MATRIX_SCROLL_SPEED);
+  matrix.setTextAlignment(PA_LEFT);
+  matrix.displayScroll(matrixTextBuffer, PA_LEFT, PA_SCROLL_RIGHT, MATRIX_SCROLL_SPEED);
   matrixScrollActive = true;
 }
 
@@ -198,6 +200,7 @@ void readInputsPoints(){
   int redState = digitalRead(RED_sw_bumper);
   int yellowState = digitalRead(YELLOW_sw_bumper);
   int onOffState = digitalRead(ON_OFF_sw);
+  int specialState = digitalRead(special_sw);
   int ballReleaseState = digitalRead(ball_release_sw);
 
   unsigned long now = millis();
@@ -222,6 +225,9 @@ void readInputsPoints(){
     } else if (onOffState == PRESSED && previousOnOffState == RELEASED) {
       currentEvent = ON_OFF_HIT;
       lastHitTime = now;
+    } else if (specialState == PRESSED && previousSpecialState == RELEASED ){
+      currentEvent = SPECIAL_HIT;
+      lastHitTime = now;
     } else if (ballReleaseState == PRESSED && previousBallRelease == RELEASED){
       currentEvent = BALL_RELEASE_HIT;
       lastHitTime = now;
@@ -235,10 +241,13 @@ void readInputsPoints(){
   previousRedState = redState;
   previousYellowState = yellowState;
   previousOnOffState = onOffState;
+  previousSpecialState = specialState;
   previousBallRelease = ballReleaseState;
   if(now - lastHitTime > 10000 && !gameOver) { // reset event if no hits for 10 seconds
     if(now - inactivityWarningTime > 1000) { // show warning after 5 seconds of inactivity
-      showText(String("Game Over: ") + warningCounter);
+      matrix.displayClear();
+      matrix.setTextAlignment(PA_CENTER);
+      matrix.print(String("Idle: ") + warningCounter);
       //matrix.print(warningCounter);
       inactivityWarningTime = now;
       warningCounter--;
@@ -360,7 +369,7 @@ void handleEvent() {
       break;
 
     case RED_GROUP_HIT:
-      if(digitalRead(Y_LED5) == RELAY_ON && digitalRead(R_LED5) == RELAY_ON) { // Only add points if the last red or yellow LED is off
+      if(digitalRead(Y_LED5) == RELAY_ON && digitalRead(R_LED5) == RELAY_ON && specialMode) { // Only add points if the last red or yellow LED is off
         addPoints(500);
       } else if(digitalRead(Y_LED4) == RELAY_ON && digitalRead(R_LED4) == RELAY_ON) { // If both are off, add 10 points
          addPoints(300);
@@ -378,7 +387,7 @@ void handleEvent() {
       break;
 
     case YELLOW_GROUP_HIT:
-      if(digitalRead(Y_LED5) == RELAY_ON && digitalRead(R_LED5) == RELAY_ON) { // Only add points if the last red or yellow LED is off
+      if(digitalRead(Y_LED5) == RELAY_ON && digitalRead(R_LED5) == RELAY_ON && specialMode) { // Only add points if the last red or yellow LED is off
         addPoints(500);
       } else if(digitalRead(Y_LED4) == RELAY_ON && digitalRead(R_LED4) == RELAY_ON) { // If both are off, add 10 points
          addPoints(300);
@@ -466,16 +475,7 @@ void updateLEDs() {
       digitalWrite(PATH_LED, RELAY_ON); // Turn off red LED during special mode
       digitalWrite(TARGET_LED, RELAY_ON); // Turn off target LED during special mode
     } else {
-      digitalWrite(P_LED, RELAY_OFF); // Turn off the special LED after special mode ends
-      digitalWrite(TW_LED, RELAY_OFF); // Turn TW LED back on after special mode ends
-      digitalWrite(PATH_LED, RELAY_OFF); // Turn red LED back on after special mode ends
-      digitalWrite(TARGET_LED, RELAY_OFF); // Turn target LED back on after special mode ends
-      for(int i = 0; i < sizeof(redLeds)/sizeof(redLeds[0]); i++){
-        digitalWrite(redLeds[i], RELAY_OFF); // Turn off all red LEDs after special mode ends
-      }
-      for(int i = 0; i < sizeof(yellowLeds)/sizeof(yellowLeds[0]); i++){
-        digitalWrite(yellowLeds[i], RELAY_OFF); // Turn off all yellow LEDs after special mode ends
-      }
+      turnOffLeds();
       specialMode = false;
       specialModeStartTime = 0;
     }
@@ -523,6 +523,19 @@ bool blinkLed(int ledPin, long startTime, int duration, bool &blinking) {
   }
 }
 
+void turnOffLeds(){
+      digitalWrite(P_LED, RELAY_OFF); // Turn off the special LED after special mode ends
+      digitalWrite(TW_LED, RELAY_OFF); // Turn TW LED back on after special mode ends
+      digitalWrite(PATH_LED, RELAY_OFF); // Turn red LED back on after special mode ends
+      digitalWrite(TARGET_LED, RELAY_OFF); // Turn target LED back on after special mode ends
+      for(int i = 0; i < sizeof(redLeds)/sizeof(redLeds[0]); i++){
+        digitalWrite(redLeds[i], RELAY_OFF); // Turn off all red LEDs after special mode ends
+      }
+      for(int i = 0; i < sizeof(yellowLeds)/sizeof(yellowLeds[0]); i++){
+        digitalWrite(yellowLeds[i], RELAY_OFF); // Turn off all yellow LEDs after special mode ends
+      }
+}
+
 
 void releaseBall(){
     if(!gameOver){
@@ -539,10 +552,11 @@ void releaseBall(){
 
 void gameover(){
   gameOver = true;
+  turnOffLeds();
   warningCounter = 5; // reset warning counter for next game
-  showText("Game Over");
+  showText("Game Over Game Over Game Over");
   Serial.print("Game Over");
-  delay(1000);
+  delay(3000);
   matrix.displayClear();
 }
 
