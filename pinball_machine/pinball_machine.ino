@@ -73,6 +73,9 @@ const int RELAY_OFF = HIGH;
 
 // ---- OBJECT ----
 MD_Parola matrix = MD_Parola(HARDWARE_TYPE, MATRIX_DIN, MATRIX_CLK, MATRIX_CS, MAX_DEVICES);
+char matrixTextBuffer[64] = "";
+bool matrixScrollActive = false;
+const uint16_t MATRIX_SCROLL_SPEED = 70;
 
 // -------- Score logic --------
 int score = 0; // initial set to 0
@@ -159,15 +162,28 @@ void setup() {
 // Display Logic
 //===============================
 void showText(const char* text) {
+  strncpy(matrixTextBuffer, text, sizeof(matrixTextBuffer) - 1);
+  matrixTextBuffer[sizeof(matrixTextBuffer) - 1] = '\0';
   matrix.displayClear();
-  matrix.setTextAlignment(PA_CENTER);
-  matrix.print(text);
+  matrix.displayScroll(matrixTextBuffer, PA_LEFT, PA_SCROLL_LEFT, MATRIX_SCROLL_SPEED);
+  matrixScrollActive = true;
+}
+
+void showText(const String& text) {
+  showText(text.c_str());
 }
 
 void showScore(int score) {
+  matrixScrollActive = false;
   matrix.displayClear();
   matrix.setTextAlignment(PA_CENTER);
   matrix.print(score);
+}
+
+void updateMatrixDisplay() {
+  if (matrixScrollActive && matrix.displayAnimate()) {
+    matrixScrollActive = false;
+  }
 }
 
 // ================================
@@ -222,7 +238,7 @@ void readInputsPoints(){
   previousBallRelease = ballReleaseState;
   if(now - lastHitTime > 10000 && !gameOver) { // reset event if no hits for 10 seconds
     if(now - inactivityWarningTime > 1000) { // show warning after 5 seconds of inactivity
-      showText("Game Over in" + (char) warningCounter);
+      showText(String("Game Over: ") + warningCounter);
       //matrix.print(warningCounter);
       inactivityWarningTime = now;
       warningCounter--;
@@ -511,7 +527,7 @@ bool blinkLed(int ledPin, long startTime, int duration, bool &blinking) {
 void releaseBall(){
     if(!gameOver){
       ballcount++;
-      showText("Ball " + char(ballcount));
+      showText(String("Ball ") + ballcount);
       Serial.print("BallCount: ");
        Serial.println(ballcount);
 
@@ -542,15 +558,13 @@ void loop() {
     handleBallRelease();
     handleEvent();
     updateLEDs();
+    updateMatrixDisplay();
     delay(1);
 
     //Serial.println(digitalRead(path)); //use for debugging to check wiring (111 = correct, 101 = wiring not done correctly)
     // No blocking delay: relay outputs stay responsive while score hits are rate-limited above.
 
 }
-
-
-
 
 
 
