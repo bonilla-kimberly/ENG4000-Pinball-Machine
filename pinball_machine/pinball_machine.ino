@@ -534,6 +534,8 @@ void turnOffLeds(){
       for(int i = 0; i < sizeof(yellowLeds)/sizeof(yellowLeds[0]); i++){
         digitalWrite(yellowLeds[i], RELAY_OFF); // Turn off all yellow LEDs after special mode ends
       }
+      redLedIndex = 0;
+      yellowLedIndex = 0;
 }
 
 
