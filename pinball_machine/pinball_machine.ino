@@ -108,7 +108,7 @@ const uint64_t IMAGES[] = {
 };
 const int IMAGES_LEN = sizeof(IMAGES)/8;
 const int MATRIX_WIDTH = 8;
-const int SUBWAY_SECOND_MATRIX_FRAME = 7;
+const int SUBWAY_FRAMES_PER_MATRIX = 7;
 
 
 MD_Parola matrix = MD_Parola(HARDWARE_TYPE, MATRIX_DIN, MATRIX_CLK, MATRIX_CS, MAX_DEVICES);
@@ -537,7 +537,8 @@ void updateLEDs() {
     }
 
     matrix.displayClear();
-    int subwayOffset = (i >= SUBWAY_SECOND_MATRIX_FRAME) ? MATRIX_WIDTH : 0;
+    int subwayMatrix = (i / SUBWAY_FRAMES_PER_MATRIX) % MAX_DEVICES;
+    int subwayOffset = subwayMatrix * MATRIX_WIDTH;
     displayImage(IMAGES[i], subwayOffset);
     //displayImage(IMAGES[i], 10); //cart 2
     //displayImage(IMAGES[(i + 3)], 10); //cart 2
@@ -652,7 +653,6 @@ void loop() {
   
 
 }
-
 
 
 
