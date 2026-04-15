@@ -236,9 +236,9 @@ void displayImage(uint64_t image, int offset){
     for(int col = 0; col < 8; col++){
       int x = col + offset;
 
-      //if(x >=0 && x < 32){ //stay wihtin the diplay witch 
+      if(x >=0 && x < 32){ //stay wihtin the diplay witch 
       matrix.getGraphicObject()->setPoint(row, col + offset, bitRead(rowData, col));
-     // }
+      }
     }
   }
 }
