@@ -537,15 +537,15 @@ void updateLEDs() {
     }
 
     matrix.displayClear();
-    int subwayMatrix = (i / SUBWAY_FRAMES_PER_MATRIX) % MAX_DEVICES;
-    int subwayOffset = subwayMatrix * MATRIX_WIDTH;
-    int subwayFrame = i % SUBWAY_FRAMES_PER_MATRIX;
-    displayImage(IMAGES[subwayFrame], subwayOffset);
-    //displayImage(IMAGES[i], 10); //cart 2
-    //displayImage(IMAGES[(i + 3)], 10); //cart 2
-    //displayImage(IMAGES[i], 20); //cart 3
-    //displayImage(IMAGES[(i + 6)], 20); //cart 2
-    if(++i >= IMAGES_LEN){
+    for (int matrixIndex = 0; matrixIndex < MAX_DEVICES; matrixIndex++) {
+      int subwayFrame = i - (matrixIndex * SUBWAY_FRAMES_PER_MATRIX);
+      if (subwayFrame >= 0 && subwayFrame < IMAGES_LEN) {
+        int subwayOffset = matrixIndex * MATRIX_WIDTH;
+        displayImage(IMAGES[subwayFrame], subwayOffset);
+      }
+    }
+
+    if(++i >= IMAGES_LEN + (MAX_DEVICES - 1) * SUBWAY_FRAMES_PER_MATRIX){
       i = 0;
     }
     delay(100);
@@ -654,7 +654,6 @@ void loop() {
   
 
 }
-
 
 
 
