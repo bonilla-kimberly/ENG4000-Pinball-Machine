@@ -72,10 +72,26 @@ const int RELAY_ON = LOW;
 const int RELAY_OFF = HIGH;
 
 // ---- OBJECT ----
+//For Subway at the intro of the game
+const uint64_t IMAGES[] = {
+  0x0303030101000000,
+  0x0707070303000000,
+  0x0f0f0e0607000000,
+  0x3f3f39191f000000,
+  0x7f7f72323f000000,
+  0xffffe4647f000000,
+  0xffffc9c9ff000000,
+  0xffff9393ff000000,
+  0xfeff2626fe000000,
+  0xfcff4c4cfc000000
+};
+const int IMAGES_LEN = sizeof(IMAGES)/8;
+
 MD_Parola matrix = MD_Parola(HARDWARE_TYPE, MATRIX_DIN, MATRIX_CLK, MATRIX_CS, MAX_DEVICES);
 char matrixTextBuffer[64] = "";
 bool matrixScrollActive = false;
 const uint16_t MATRIX_SCROLL_SPEED = 35;
+
 
 // -------- Score logic --------
 int score = 0; // initial set to 0
@@ -126,6 +142,7 @@ void setup() {
   matrix.setIntensity(5); // Set brightness (0-15)
   matrix.displayClear();
   showScore(0);
+  display.shutdown(0, false);
   //gameover();
   const int NUM_SWITCHES[] = {path, L_flipper_sw, R_flipper_sw, TW_switch, target_sw, RED_sw_bumper, YELLOW_sw_bumper, ball_release_sw, ON_OFF_sw};
 
@@ -187,6 +204,21 @@ void updateMatrixDisplay() {
     matrixScrollActive = false;
   }
 }
+
+void displayImage(uint64_t image, int offset){
+  for(int row = 0; row < 8; row++){
+    byte rowData = (image >> row * 8) & 0xFF;
+
+    for(int col = 0; col < 8; col++){
+      int x = col + offset;
+
+      if(x >=0 && x < 32){ //stay wihtin the diplay witch 
+      matrix.setLed(0, row, col, bitRead(rowData, col));
+      }
+    }
+  }
+}
+
 
 // ================================
 // Read Input switches for points (switch based (instant event))
@@ -479,6 +511,17 @@ void updateLEDs() {
       specialMode = false;
       specialModeStartTime = 0;
     }
+
+    matrix.displayClear();
+    displayImage(IMAGES[i], 0);//cart 1
+    displayImage(IMAGES[i], 10); //cart 2
+    //displayImage(IMAGES[(i + 3)], 10); //cart 2
+    displayImage(IMAGES[i], 20); //cart 3
+    //displayImage(IMAGES[(i + 6)], 20); //cart 2
+    if(++i >= IMAGES_LEN){
+      i = 0;
+    }
+    delay(200);
   }
 
   if(specialMode) {
@@ -579,6 +622,9 @@ void loop() {
 
     //Serial.println(digitalRead(path)); //use for debugging to check wiring (111 = correct, 101 = wiring not done correctly)
     // No blocking delay: relay outputs stay responsive while score hits are rate-limited above.
+
+    //Moving Train for intro
+  
 
 }
 
