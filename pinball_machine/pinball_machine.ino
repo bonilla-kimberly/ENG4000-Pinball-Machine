@@ -539,7 +539,8 @@ void updateLEDs() {
     matrix.displayClear();
     int subwayMatrix = (i / SUBWAY_FRAMES_PER_MATRIX) % MAX_DEVICES;
     int subwayOffset = subwayMatrix * MATRIX_WIDTH;
-    displayImage(IMAGES[i], subwayOffset);
+    int subwayFrame = i % SUBWAY_FRAMES_PER_MATRIX;
+    displayImage(IMAGES[subwayFrame], subwayOffset);
     //displayImage(IMAGES[i], 10); //cart 2
     //displayImage(IMAGES[(i + 3)], 10); //cart 2
     //displayImage(IMAGES[i], 20); //cart 3
@@ -653,7 +654,6 @@ void loop() {
   
 
 }
-
 
 
 
