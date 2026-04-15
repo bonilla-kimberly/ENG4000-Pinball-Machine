@@ -83,14 +83,37 @@ const uint64_t IMAGES[] = {
   0xffffc9c9ff000000,
   0xffff9393ff000000,
   0xfeff2626fe000000,
-  0xfcff4c4cfc000000
+  0xfcff4c4cfc000000,
+  0xf3ff3331f1000000,
+  0xe7ff6763e3000000,
+  0xcfffcec6c7000000,
+  0x3fff39191f000000,
+  0x7fff72323f000000,
+  0xffffe4647f000000,
+  0xffffc9c9ff000000,
+  0xffff9393ff000000,
+  0xfeff2626fe000000,
+  0xfcff4c4cfc000000,
+  0xf3ff3331f1000000,
+  0xe7ff6763e3000000,
+  0xcfffcec6c7000000,
+  0x9fff9c8c8f000000,
+  0x3fff39191f000000,
+  0x7fff72323f000000,
+  0xffffe4647f000000,
+  0xffffc9c9ff000000,
+  0xffff9393ff000000,
+  0xfefe2626fe000000,
+  0xfcfc4c4cfc000000
 };
 const int IMAGES_LEN = sizeof(IMAGES)/8;
+
 
 MD_Parola matrix = MD_Parola(HARDWARE_TYPE, MATRIX_DIN, MATRIX_CLK, MATRIX_CS, MAX_DEVICES);
 char matrixTextBuffer[64] = "";
 bool matrixScrollActive = false;
 const uint16_t MATRIX_SCROLL_SPEED = 35;
+int i = 0;
 
 
 // -------- Score logic --------
@@ -142,7 +165,6 @@ void setup() {
   matrix.setIntensity(5); // Set brightness (0-15)
   matrix.displayClear();
   showScore(0);
-  display.shutdown(0, false);
   //gameover();
   const int NUM_SWITCHES[] = {path, L_flipper_sw, R_flipper_sw, TW_switch, target_sw, RED_sw_bumper, YELLOW_sw_bumper, ball_release_sw, ON_OFF_sw};
 
@@ -212,9 +234,9 @@ void displayImage(uint64_t image, int offset){
     for(int col = 0; col < 8; col++){
       int x = col + offset;
 
-      if(x >=0 && x < 32){ //stay wihtin the diplay witch 
-      matrix.setLed(0, row, col, bitRead(rowData, col));
-      }
+      //if(x >=0 && x < 32){ //stay wihtin the diplay witch 
+      matrix.getGraphicObject()->setPoint(row, col + offset, bitRead(rowData, col));
+     // }
     }
   }
 }
@@ -514,14 +536,14 @@ void updateLEDs() {
 
     matrix.displayClear();
     displayImage(IMAGES[i], 0);//cart 1
-    displayImage(IMAGES[i], 10); //cart 2
+    //displayImage(IMAGES[i], 10); //cart 2
     //displayImage(IMAGES[(i + 3)], 10); //cart 2
-    displayImage(IMAGES[i], 20); //cart 3
+    //displayImage(IMAGES[i], 20); //cart 3
     //displayImage(IMAGES[(i + 6)], 20); //cart 2
     if(++i >= IMAGES_LEN){
       i = 0;
     }
-    delay(200);
+    delay(100);
   }
 
   if(specialMode) {
