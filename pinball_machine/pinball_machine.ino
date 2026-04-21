@@ -81,7 +81,7 @@ int i = 0;
 
 // -------- Score logic --------
 int score = 0; // initial set to 0
-const unsigned long HIT_COOLDOWN_MS = 500;
+const unsigned long HIT_COOLDOWN_MS = 100;
 unsigned long lastHitTime = 0;
 unsigned long inactivityWarningTime = 0;
 int warningCounter = 5;
@@ -128,7 +128,7 @@ void setup() {
   matrix.setIntensity(5); // Set brightness (0-15)
   matrix.displayClear();
   showScore(0);
-  //gameover();
+  gameover();
   const int NUM_SWITCHES[] = {path, L_flipper_sw, R_flipper_sw, TW_switch, target_sw, RED_sw_bumper, YELLOW_sw_bumper, ball_release_sw, ON_OFF_sw};
 
   const int NUM_ACTUATORS[] = {L_flipper, R_flipper, target_bump, RED_bump, YELLOW_bump, ball_release};
@@ -310,7 +310,7 @@ void handleBallRelease() {
   //one button press (will ignore hold)
   if(prev == RELEASED && curr == PRESSED && !gameOver){
     digitalWrite(ball_release, RELAY_ON);
-    delay(50); //pulse to avoid reading a hold 
+    delay(1000); //pulse to avoid reading a hold 
     digitalWrite(ball_release, RELAY_OFF);
   } 
     prev = curr;
@@ -407,7 +407,7 @@ void handleEvent() {
       break;
 
     case SPECIAL_HIT:
-      if (digitalRead(R_LED5) == RELAY_ON && digitalRead(Y_LED5) == RELAY_ON && specialModeStartTime == 0) { // Special mode if both last red and yellow LEDs are on
+      if (digitalRead(R_LED1) == RELAY_ON && digitalRead(Y_LED1) == RELAY_ON && specialModeStartTime == 0) { // Special mode if both last red and yellow LEDs are on
         addPoints(10);
         specialMode = true;
         specialModeStartTime = millis(); // Start timer for special mode
@@ -429,11 +429,17 @@ void handleEvent() {
           resetPoints();
           ballcount = 0;
           gameOver = false;
+          digitalWrite(ball_release, RELAY_ON);
+          delay(1000);
+          digitalWrite(ball_release, RELAY_OFF);
+          releaseBall();
       }
       break;
 
     case BALL_RELEASE_HIT:
-      releaseBall();
+      if(ballcount < MAX_BALLS){
+        releaseBall();
+      }
       break;
       
     case NO_EVENT:
@@ -548,7 +554,7 @@ void releaseBall(){
       Serial.print("BallCount: ");
        Serial.println(ballcount);
 
-    if(ballcount >= MAX_BALLS){
+    if(ballcount > MAX_BALLS){
       gameover();
       }
     }
@@ -556,6 +562,7 @@ void releaseBall(){
 
 void gameover(){
   gameOver = true;
+  ballcount = 0;
   turnOffLeds();
   warningCounter = 5; // reset warning counter for next game
   showText("Game Over Game Over Game Over");
