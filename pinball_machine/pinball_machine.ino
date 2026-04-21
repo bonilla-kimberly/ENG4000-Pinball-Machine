@@ -71,45 +71,6 @@ const int RELEASED = HIGH;
 const int RELAY_ON = LOW;
 const int RELAY_OFF = HIGH;
 
-// ---- OBJECT ----
-//For Subway at the intro of the game
-const uint64_t IMAGES[] = {
-  0x0303030101000000,
-  0x0707070303000000,
-  0x0f0f0e0607000000,
-  0x3f3f39191f000000,
-  0x7f7f72323f000000,
-  0xffffe4647f000000,
-  0xffffc9c9ff000000,
-  0xffff9393ff000000,
-  0xfeff2626fe000000,
-  0xfcff4c4cfc000000,
-  0xf3ff3331f1000000,
-  0xe7ff6763e3000000,
-  0xcfffcec6c7000000,
-  0x3fff39191f000000,
-  0x7fff72323f000000,
-  0xffffe4647f000000,
-  0xffffc9c9ff000000,
-  0xffff9393ff000000,
-  0xfeff2626fe000000,
-  0xfcff4c4cfc000000,
-  0xf3ff3331f1000000,
-  0xe7ff6763e3000000,
-  0xcfffcec6c7000000,
-  0x9fff9c8c8f000000,
-  0x3fff39191f000000,
-  0x7fff72323f000000,
-  0xffffe4647f000000,
-  0xffffc9c9ff000000,
-  0xffff9393ff000000,
-  0xfefe2626fe000000,
-  0xfcfc4c4cfc000000
-};
-const int IMAGES_LEN = sizeof(IMAGES)/8;
-const int MATRIX_WIDTH = 8;
-const int SUBWAY_FRAMES_PER_MATRIX = 7;
-
 
 MD_Parola matrix = MD_Parola(HARDWARE_TYPE, MATRIX_DIN, MATRIX_CLK, MATRIX_CS, MAX_DEVICES);
 char matrixTextBuffer[64] = "";
@@ -228,21 +189,6 @@ void updateMatrixDisplay() {
     matrixScrollActive = false;
   }
 }
-
-void displayImage(uint64_t image, int offset){
-  for(int row = 0; row < 8; row++){
-    byte rowData = (image >> row * 8) & 0xFF;
-
-    for(int col = 0; col < 8; col++){
-      int x = col + offset;
-
-      if(x >=0 && x < 32){ //stay wihtin the diplay witch 
-      matrix.getGraphicObject()->setPoint(row, col + offset, bitRead(rowData, col));
-      }
-    }
-  }
-}
-
 
 // ================================
 // Read Input switches for points (switch based (instant event))
@@ -425,15 +371,15 @@ void handleEvent() {
       break;
 
     case RED_GROUP_HIT:
-      if(digitalRead(Y_LED5) == RELAY_ON && digitalRead(R_LED5) == RELAY_ON && specialMode) { // Only add points if the last red or yellow LED is off
+      if(digitalRead(Y_LED1) == RELAY_ON && digitalRead(R_LED1) == RELAY_ON && specialMode) { // Only add points if the last red or yellow LED is off
         addPoints(500);
-      } else if(digitalRead(Y_LED4) == RELAY_ON && digitalRead(R_LED4) == RELAY_ON) { // If both are off, add 10 points
+      } else if(digitalRead(Y_LED2) == RELAY_ON && digitalRead(R_LED2) == RELAY_ON) { // If both are off, add 10 points
          addPoints(300);
       } else if(digitalRead(Y_LED3) == RELAY_ON && digitalRead(R_LED3) == RELAY_ON) {
          addPoints(200);
-      } else if(digitalRead(Y_LED2) == RELAY_ON && digitalRead(R_LED2) == RELAY_ON) {
+      } else if(digitalRead(Y_LED4) == RELAY_ON && digitalRead(R_LED4) == RELAY_ON) {
          addPoints(100);
-      } else if(digitalRead(Y_LED1) == RELAY_ON && digitalRead(R_LED1) == RELAY_ON) {
+      } else if(digitalRead(Y_LED5) == RELAY_ON && digitalRead(R_LED5) == RELAY_ON) {
          addPoints(50);
       } else {
          addPoints(10);
@@ -443,15 +389,15 @@ void handleEvent() {
       break;
 
     case YELLOW_GROUP_HIT:
-      if(digitalRead(Y_LED5) == RELAY_ON && digitalRead(R_LED5) == RELAY_ON && specialMode) { // Only add points if the last red or yellow LED is off
+      if(digitalRead(Y_LED1) == RELAY_ON && digitalRead(R_LED1) == RELAY_ON && specialMode) { // Only add points if the last red or yellow LED is off
         addPoints(500);
-      } else if(digitalRead(Y_LED4) == RELAY_ON && digitalRead(R_LED4) == RELAY_ON) { // If both are off, add 10 points
+      } else if(digitalRead(Y_LED2) == RELAY_ON && digitalRead(R_LED2) == RELAY_ON) { // If both are off, add 10 points
          addPoints(300);
       } else if(digitalRead(Y_LED3) == RELAY_ON && digitalRead(R_LED3) == RELAY_ON) {
          addPoints(200);
-      } else if(digitalRead(Y_LED2) == RELAY_ON && digitalRead(R_LED2) == RELAY_ON) {
+      } else if(digitalRead(Y_LED4) == RELAY_ON && digitalRead(R_LED4) == RELAY_ON) {
          addPoints(100);
-      } else if(digitalRead(Y_LED1) == RELAY_ON && digitalRead(R_LED1) == RELAY_ON) {
+      } else if(digitalRead(Y_LED5) == RELAY_ON && digitalRead(R_LED5) == RELAY_ON) {
          addPoints(50);
       } else {
          addPoints(10);
@@ -518,9 +464,9 @@ void resetPoints(){
 // LEDs Logic 
 // ================================
 
-const int redLeds[] = {R_LED1, R_LED2, R_LED3, R_LED4, R_LED5};
+const int redLeds[] = {R_LED5, R_LED4, R_LED3, R_LED2, R_LED1};
 int redLedIndex = 0;
-const int yellowLeds[] = {Y_LED1, Y_LED2, Y_LED3, Y_LED4, Y_LED5};
+const int yellowLeds[] = {Y_LED5, Y_LED4, Y_LED3, Y_LED2, Y_LED1};
 int yellowLedIndex = 0;
 
 void updateLEDs() {
@@ -535,20 +481,6 @@ void updateLEDs() {
       specialMode = false;
       specialModeStartTime = 0;
     }
-
-    matrix.displayClear();
-    for (int matrixIndex = 0; matrixIndex < MAX_DEVICES; matrixIndex++) {
-      int subwayFrame = i - (matrixIndex * SUBWAY_FRAMES_PER_MATRIX);
-      if (subwayFrame >= 0 && subwayFrame < IMAGES_LEN) {
-        int subwayOffset = matrixIndex * MATRIX_WIDTH;
-        displayImage(IMAGES[subwayFrame], subwayOffset);
-      }
-    }
-
-    if(++i >= IMAGES_LEN + (MAX_DEVICES - 1) * SUBWAY_FRAMES_PER_MATRIX){
-      i = 0;
-    }
-    delay(100);
   }
 
   if(specialMode) {
